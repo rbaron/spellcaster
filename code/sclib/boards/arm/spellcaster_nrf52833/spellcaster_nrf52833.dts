@@ -1,0 +1,173 @@
+/dts-v1/;
+#include <nordic/nrf52833_qiaa.dtsi>
+#include "spellcaster_nrf52833-pinctrl.dtsi"
+
+/ {
+	model = "A soil moisture sensor based on Nordic's nRF52833";
+	compatible = "rbaron,spellcaster_nrf52833";
+
+	chosen {
+		zephyr,sram = &sram0;
+		zephyr,flash = &flash0;
+		zephyr,code-partition = &slot0_partition;
+		zephyr,ieee802154 = &ieee802154;
+	};
+
+	zephyr,user {
+		io-channels = <&adc 0>, <&adc 2>;
+	};
+
+	leds {
+		compatible = "gpio-leds";
+		led0: led_0 {
+			// P0.28.
+			gpios = <&gpio0 28 GPIO_ACTIVE_HIGH>;
+		};
+	};
+
+	buttons {
+		compatible = "gpio-keys";
+		button0: button_0 {
+			// P0.30.
+			gpios = <&gpio0 30 (GPIO_PULL_UP | GPIO_ACTIVE_LOW)>;
+			label = "Push button SW1";
+		};
+	};
+
+	soil_pwm: soil_pwm {
+		compatible = "pwm-fixed";
+		pwms = <&pwm0 0 PWM_USEC(2) PWM_POLARITY_NORMAL>;
+		pulse = <PWM_USEC(1)>;
+	};
+
+	soil_calibration_coeffs: soil_calibration_coeffs {
+		compatible = "soil-calibration-coeffs";
+		dry = <306000 101000 (-11700)>;
+		wet = <19000 (-4980) 3420>;
+	};
+
+	ctrl {
+		compatible = "gpio-keys";
+		fast_disch: fast_disch {
+			// P0.25.
+			gpios = <&gpio0 25 GPIO_ACTIVE_HIGH>;
+			label = "Fast discharge circuitry";
+		};
+	};
+};
+
+&gpiote {
+	status = "okay";
+};
+
+&gpio0 {
+	status = "okay";
+	// For low-power EDGE interrupts.
+	// See github.com/zephyrproject-rtos/zephyr/issues/28499.
+	sense-edge-mask = <0xffffffff>;
+};
+
+&gpio1 {
+	status = "okay";
+};
+
+&ieee802154 {
+	status = "okay";
+};
+
+&uart0 {
+	compatible = "nordic,nrf-uart";
+	status = "disabled";
+	current-speed = <115200>;
+	pinctrl-0 = <&uart0_default>;
+	pinctrl-1 = <&uart0_sleep>;
+	pinctrl-names = "default", "sleep";
+};
+
+&i2c0 {
+	compatible = "nordic,nrf-twi";
+	status = "okay";
+	pinctrl-0 = <&i2c0_default>;
+	pinctrl-1 = <&i2c0_sleep>;
+	pinctrl-names = "default", "sleep";
+
+	shtc3: shtc3@70 {
+		compatible = "i2c-device";
+		reg = <0x70>;
+		label = "SHTC3";
+	};
+
+	mpu6050: mpu6050@68 {
+		compatible = "invensense,mpu6050";
+		reg = <0x68>;
+		label = "MPU6050";
+	};
+};
+
+&pwm0 {
+	status = "okay";
+	pinctrl-0 = <&pwm0_default>;
+	pinctrl-1 = <&pwm0_sleep>;
+	pinctrl-names = "default", "sleep";
+};
+
+&adc {
+	#address-cells = <1>;
+	#size-cells = <0>;
+	status = "ok";
+
+	// Soil.
+	channel@0 {
+		reg = <0>;
+		zephyr,gain = "ADC_GAIN_1_6";
+		zephyr,reference = "ADC_REF_VDD_1_4";
+		zephyr,acquisition-time = <ADC_ACQ_TIME_DEFAULT>;
+		// P0.03.
+		zephyr,input-positive = <NRF_SAADC_AIN1>;
+		zephyr,resolution = <10>;
+
+	};
+
+	// Battery.
+	channel@2 {
+		reg = <2>;
+		zephyr,gain = "ADC_GAIN_1_6";
+		zephyr,reference = "ADC_REF_INTERNAL";
+		zephyr,acquisition-time = <ADC_ACQ_TIME_DEFAULT>;
+		zephyr,input-positive = <NRF_SAADC_VDD>;
+		zephyr,resolution = <10>;
+	};
+};
+
+&flash0 {
+	/*
+	 * For more information, see:
+	 * http: //docs.zephyrproject.org/latest/guides/dts/index.html#flash-partitions
+	 */
+	partitions {
+		compatible = "fixed-partitions";
+		#address-cells = <1>;
+		#size-cells = <1>;
+
+		boot_partition: partition@0 {
+			label = "mcuboot";
+			reg = <0x000000000 0xC000>;
+		};
+		slot0_partition: partition@c000 {
+			label = "image-0";
+			reg = <0x0000C000 0x32000>;
+		};
+		slot1_partition: partition@3e000 {
+			label = "image-1";
+			reg = <0x0003E000 0x32000>;
+		};
+		scratch_partition: partition@70000 {
+			label = "image-scratch";
+			reg = <0x00070000 0xA000>;
+		};
+		storage_partition: partition@7a000 {
+			label = "storage";
+			reg = <0x0007A000 0x00006000>;
+		};
+	};
+};

@@ -1,0 +1,3 @@
+module = SCLIB
+module-str = sclib
+source "subsys/logging/Kconfig.template.log_config"

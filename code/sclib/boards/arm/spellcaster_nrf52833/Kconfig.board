@@ -1,0 +1,4 @@
+
+config BOARD_SPELLCASTER_NRF52833
+	bool "spellcaster nRF52833 board"
+	depends on SOC_NRF52833_QIAA

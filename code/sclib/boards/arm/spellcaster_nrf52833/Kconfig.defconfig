@@ -1,0 +1,18 @@
+
+if BOARD_SPELLCASTER_NRF52833
+
+config BOARD
+	default "spellcaster_nrf52833"
+
+config BOARD_REVISION
+	string "Board revision."
+	default "0.0.0"
+
+config BOARD_REVISION_CODE
+	int "Board revision code. An integer representation of the board revision."
+	default 0
+
+config BT_CTLR
+	default BT
+
+endif  # BOARD_SPELLCASTER_NRF52833
