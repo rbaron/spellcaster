@@ -8,23 +8,13 @@
 
 LOG_MODULE_REGISTER(main, LOG_LEVEL_DBG);
 
+void caster_cb(uint8_t slot) {
+  LOG_DBG("Caster callback for slot %d", slot);
+}
+
 int main(void) {
-  sc_led_init();
-  // sc_accel_init();
-  sc_caster_init();
-
-  // struct sc_motion_detector md;
-  // sc_md_init(&md);
-
-  // sd_led_flash(2);
-  // __ASSERT_NO_MSG(!sc_caster_init());
-
-  // struct sc_accel_entry entry;
+  __ASSERT_NO_MSG(!sc_caster_init(caster_cb));
   while (true) {
-    // if (!sc_accel_read(&entry)) {
-    //   sc_md_ingest(&md, &entry);
-    // }
-    // LOG_DBG("Main thread is running.");
-    k_msleep(1000);
+    k_sleep(K_FOREVER);
   }
 }

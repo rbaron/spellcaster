@@ -4,11 +4,21 @@
 #include <stdbool.h>
 
 typedef enum {
-  SC_BUTTON_SW1 = 0,
-  SC_BUTTON_P010 = 1,
+  SC_BUTTON_A = 0,
+  SC_BUTTON_B = 1,
 } sc_button_t;
 
-typedef void (*sc_button_callback_t)(sc_button_t button, bool is_active);
+typedef enum {
+  SC_BUTTON_EVENT_SHORT_PRESS,
+  SC_BUTTON_EVENT_LONG_PRESS,
+  SC_BUTTON_EVENT_DOUBLE_PRESS,
+  SC_BUTTON_EVENT_TRIPLE_PRESS,
+  SC_BUTTON_EVENT_QUADRUPLE_PRESS,
+  SC_BUTTON_EVENT_QUINTUPLE_PRESS,
+} sc_button_event_t;
+
+typedef void (*sc_button_callback_t)(sc_button_t button,
+                                     sc_button_event_t event);
 
 // Inits button driver.
 int sc_button_init();

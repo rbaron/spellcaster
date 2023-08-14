@@ -1,18 +1,10 @@
 #ifndef _SCLIB_CASTER_H_
 #define _SCLIB_CASTER_H_
 
-/*
+#include <stdint.h>
 
-What we need:
-- Record to flash
-- Compare new signal with recorded signals
-- Maybe trigger callback
-*/
+typedef void (*sc_caster_callback_t)(uint8_t slot);
 
-// struct sc_caster {
-
-// };
-
-int sc_caster_init(void);
+int sc_caster_init(sc_caster_callback_t callback);
 
 #endif  // _SCLIB_CASTER_H_

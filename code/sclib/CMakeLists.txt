@@ -11,6 +11,7 @@ add_library(sclib STATIC
 	src/led.c
 	src/motion_detector.c
 	src/sensors.c
+	src/signal_store.c
 	src/shtc3.c
 )
 
