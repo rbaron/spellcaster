@@ -7,7 +7,8 @@
 #include "sclib/led.h"
 #include "sclib/macros.h"
 
-LOG_MODULE_REGISTER(button, CONFIG_SCLIB_LOG_LEVEL);
+// LOG_MODULE_REGISTER(button, CONFIG_SCLIB_LOG_LEVEL);
+LOG_MODULE_REGISTER(button, LOG_LEVEL_DBG);
 
 static struct k_work_delayable button_pressed_delayable;
 
@@ -63,6 +64,6 @@ int sc_button_register_callback(sc_button_callback_t callback) {
 }
 
 int sc_button_poll(sc_button_t sc_button) {
-  RET_CHECK(sc_button == SC_BUTTON_SW1, "Invalid button");
+  // RET_CHECK(sc_button == SC_BUTTON_SW1, "Invalid button");
   return gpio_pin_get_dt(&button);
 }

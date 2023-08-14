@@ -5,6 +5,7 @@
 
 typedef enum {
   SC_BUTTON_SW1 = 0,
+  SC_BUTTON_P010 = 1,
 } sc_button_t;
 
 typedef void (*sc_button_callback_t)(sc_button_t button, bool is_active);

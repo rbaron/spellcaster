@@ -5,7 +5,7 @@ set(DTS_ROOT ${CMAKE_CURRENT_SOURCE_DIR}/../../sclib)
 set(BOARD_ROOT ${CMAKE_CURRENT_SOURCE_DIR}/../../sclib)
 
 find_package(Zephyr REQUIRED HINTS $ENV{ZEPHYR_BASE})
-project(check)
+project(caster-test)
 
 target_sources(app PRIVATE src/main.c)
 

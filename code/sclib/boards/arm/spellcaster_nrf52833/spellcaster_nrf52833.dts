@@ -3,7 +3,7 @@
 #include "spellcaster_nrf52833-pinctrl.dtsi"
 
 / {
-	model = "A soil moisture sensor based on Nordic's nRF52833";
+	model = "spellcaster based on Nordic's nRF52833";
 	compatible = "rbaron,spellcaster_nrf52833";
 
 	chosen {
@@ -29,29 +29,15 @@
 		compatible = "gpio-keys";
 		button0: button_0 {
 			// P0.30.
-			gpios = <&gpio0 30 (GPIO_PULL_UP | GPIO_ACTIVE_LOW)>;
+			// gpios = <&gpio0 30 (GPIO_PULL_UP | GPIO_ACTIVE_LOW)>;
+			// P1.09 (from my hacked parasite board).
+			gpios = <&gpio1 9 (GPIO_PULL_UP | GPIO_ACTIVE_LOW)>;
 			label = "Push button SW1";
 		};
-	};
-
-	soil_pwm: soil_pwm {
-		compatible = "pwm-fixed";
-		pwms = <&pwm0 0 PWM_USEC(2) PWM_POLARITY_NORMAL>;
-		pulse = <PWM_USEC(1)>;
-	};
-
-	soil_calibration_coeffs: soil_calibration_coeffs {
-		compatible = "soil-calibration-coeffs";
-		dry = <306000 101000 (-11700)>;
-		wet = <19000 (-4980) 3420>;
-	};
-
-	ctrl {
-		compatible = "gpio-keys";
-		fast_disch: fast_disch {
-			// P0.25.
-			gpios = <&gpio0 25 GPIO_ACTIVE_HIGH>;
-			label = "Fast discharge circuitry";
+		button1: button_1 {
+			// P0.10 (from my hacked parasite board).
+			gpios = <&gpio0 10 (GPIO_PULL_UP | GPIO_ACTIVE_LOW)>;
+			label = "Push button P0.10";
 		};
 	};
 };
@@ -97,9 +83,12 @@
 		label = "SHTC3";
 	};
 
-	mpu6050: mpu6050@68 {
-		compatible = "invensense,mpu6050";
+	mpu: mpu@68 {
+		// https: //github.com/zephyrproject-rtos/zephyr/blob/d11c0a1664f6052e68c6eebd35aa5aba88e7c290/samples/sensor/mpu6050/boards/nrf52dk_nrf52832.overlay#L8
+		// compatible = "invensense,mpu6050";
+		compatible = "i2c-device";
 		reg = <0x68>;
+		status = "okay";
 		label = "MPU6050";
 	};
 };
