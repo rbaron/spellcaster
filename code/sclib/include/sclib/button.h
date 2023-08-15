@@ -4,8 +4,9 @@
 #include <stdbool.h>
 
 typedef enum {
-  SC_BUTTON_A = 0,
-  SC_BUTTON_B = 1,
+  SC_BUTTON_A,
+  SC_BUTTON_B,
+  SC_BUTTON_NONE,
 } sc_button_t;
 
 typedef enum {
@@ -15,6 +16,7 @@ typedef enum {
   SC_BUTTON_EVENT_TRIPLE_PRESS,
   SC_BUTTON_EVENT_QUADRUPLE_PRESS,
   SC_BUTTON_EVENT_QUINTUPLE_PRESS,
+  SC_BUTTON_EVENT_NONE,
 } sc_button_event_t;
 
 typedef void (*sc_button_callback_t)(sc_button_t button,

@@ -11,7 +11,7 @@
 #include "sclib/motion_detector.h"
 #include "sclib/signal_store.h"
 
-#define SC_CASTER_DIST_THRESHOLD 3200
+#define SC_CASTER_DIST_THRESHOLD 5000
 
 // Thread.
 #define SC_CASTER_THREAD_STACK_SIZE (4 * 1024)
@@ -20,6 +20,14 @@
 // Logger.
 // LOG_MODULE_REGISTER(sc_caster, CONFIG_SCLIB_LOG_LEVEL);
 LOG_MODULE_REGISTER(sc_caster, LOG_LEVEL_DBG);
+
+enum Mode {
+  MODE_REPLAY = 0,
+  MODE_RECORD = 1,
+};
+
+static enum Mode mode = MODE_REPLAY;
+static uint8_t slot = 0;
 
 enum State {
   STATE_READY = 0,
@@ -63,37 +71,67 @@ static void button_callback(sc_button_t button, sc_button_event_t event) {
 
 // Test.
 struct sc_signal signal;
-static void process_buffer() {
-  // struct sc_signal signal;
-  if (sc_ss_load(/*slot=*/0, &signal)) {
+static int process_buffer() {
+  if (mode == MODE_RECORD) {
+    LOG_DBG("Will store the signal on slot %d.", slot);
     memcpy(signal.entries, fifo_buffer,
            fifo_buffer_len * sizeof(struct sc_accel_entry));
     signal.len = fifo_buffer_len;
-    __ASSERT(!sc_ss_store(0, &signal), "Failed to store signal.");
-    LOG_DBG("Saved signal.\n");
+    RET_IF_ERR(sc_ss_store(slot, &signal));
+    LOG_DBG("Stored signal.\n");
     sc_led_flash(5);
-    // LOG_DBG("WOULD STORE SIGNAL");
-    return;
+    k_msleep(1000);
+    return 0;
   }
 
-  // LOG_DBG("WOULD COMPARE SIGNAL");
+  LOG_DBG("Will compare the signal.");
 
-  // Compare the signal.
-  LOG_DBG("Comparing signal. Stored len: %d, query len: %d.\n", signal.len,
-          fifo_buffer_len);
-  size_t dist = dtw(signal.entries, signal.len, fifo_buffer, fifo_buffer_len);
-  LOG_DBG("Distance: %d\n", dist);
-
-  if (dist < SC_CASTER_DIST_THRESHOLD) {
-    LOG_DBG("Matched!");
-    sc_led_flash(2);
-    if (user_callback != NULL) {
-      user_callback(0);
+  for (uint8_t maybe_slot = 0; maybe_slot < SC_SIGNAL_STORE_MAX_SIGNALS;
+       maybe_slot++) {
+    if (sc_ss_load(/*slot=*/maybe_slot, &signal)) {
+      LOG_DBG("Failed to load signal from slot %d", maybe_slot);
+      continue;
     }
-  } else {
-    LOG_DBG("Not matched!");
-    sc_led_flash(3);
+
+    // Compare the signal.
+    LOG_DBG("Comparing signal. Stored len: %d, query len: %d.\n", signal.len,
+            fifo_buffer_len);
+    size_t dist = dtw(signal.entries, signal.len, fifo_buffer, fifo_buffer_len);
+    LOG_DBG("Distance: %d\n", dist);
+
+    if (dist < SC_CASTER_DIST_THRESHOLD) {
+      LOG_DBG("Matched slot %d", maybe_slot);
+      sc_led_flash(maybe_slot + 1);
+      if (user_callback != NULL) {
+        user_callback(maybe_slot);
+      }
+      k_msleep(1000);
+      return 0;
+    } else {
+      LOG_DBG("Not matched!");
+    }
   }
+  sc_led_flash(4);
+  k_msleep(1000);
+  return 0;
+}
+
+int handle_replay_mode(enum State *state, enum Mode *mode,
+                       const struct sc_accel_entry *entry) {
+  return 0;
+}
+
+int handle_record_mode(enum State *state, enum Mode *mode,
+                       const struct sc_accel_entry *entry) {
+  return 0;
+}
+
+static void change_mode(enum Mode *mode, enum State *state,
+                        enum Mode new_mode) {
+  *mode = new_mode;
+  *state = STATE_WAITING;
+  sc_led_flash(slot + 1);
+  fifo_buffer_len = 0;
   k_msleep(1000);
 }
 
@@ -101,6 +139,27 @@ static void sc_caster_thread_fn(void *, void *, void *) {
   struct button_event_queue_el msg;
   struct sc_accel_entry entry;
   while (true) {
+    // Get button event from queue.
+    if (k_msgq_get(&button_event_msgq, &msg, K_NO_WAIT)) {
+      msg.button = SC_BUTTON_NONE;
+      msg.event = SC_BUTTON_EVENT_NONE;
+    }
+
+    if (msg.button == SC_BUTTON_A && msg.event == SC_BUTTON_EVENT_SHORT_PRESS) {
+      LOG_DBG("Switching to capture mode (slot 0)");
+      slot = 0;
+      change_mode(&mode, &state, MODE_RECORD);
+    } else if (msg.button == SC_BUTTON_A &&
+               msg.event == SC_BUTTON_EVENT_DOUBLE_PRESS) {
+      LOG_DBG("Switching to capture mode (slot 1)");
+      slot = 1;
+      change_mode(&mode, &state, MODE_RECORD);
+    } else if (msg.button == SC_BUTTON_A &&
+               msg.event == SC_BUTTON_EVENT_LONG_PRESS) {
+      LOG_DBG("Switching to replay mode");
+      change_mode(&mode, &state, MODE_REPLAY);
+    }
+
     // FIFO is not ready (hopefully).
     if (sc_accel_read(&entry)) {
       continue;
@@ -130,39 +189,13 @@ static void sc_caster_thread_fn(void *, void *, void *) {
         k_msgq_purge(&button_event_msgq);
       }
     } else if (state == STATE_CONFIRMING) {
-      // Get button event from queue.
-      // if (k_msgq_get(&button_event_msgq, &msg, K_NO_WAIT)) {
-      //   // No button event.
-      //   continue;
-      // }
-
-      // TEST!!
-      if (true || (msg.button == SC_BUTTON_A &&
-                   msg.event == SC_BUTTON_EVENT_SHORT_PRESS)) {
-        LOG_DBG("OK pressed");
-        process_buffer();
-        fifo_buffer_len = 0;
-        state = STATE_WAITING;
-      } else if (msg.button == SC_BUTTON_B &&
-                 msg.event == SC_BUTTON_EVENT_SHORT_PRESS) {
-        LOG_DBG("Cancel pressed");
-        fifo_buffer_len = 0;
-        state = STATE_WAITING;
+      LOG_DBG("Will process buffer");
+      if (process_buffer()) {
+        LOG_ERR("Failed to process buffer");
       }
+      fifo_buffer_len = 0;
+      state = STATE_WAITING;
     } else if (state == STATE_WAITING) {
-      // if (!k_msgq_get(&button_event_msgq, &msg, K_NO_WAIT)) {
-      //   // Button event.
-      //   if (msg.button == SC_BUTTON_A &&
-      //       msg.event == SC_BUTTON_EVENT_SHORT_PRESS) {
-      //     LOG_DBG("Set store slot to 0");
-      //     sc_led_flash(1);
-      //   } else if (msg.button == SC_BUTTON_A &&
-      //              msg.event == SC_BUTTON_EVENT_DOUBLE_PRESS) {
-      //     LOG_DBG("Set store slot to 1");
-      //     sc_led_flash(2);
-      //   }
-      // }
-
       if (sc_md_is_still(&md)) {
         LOG_DBG("Will get ready");
         state = STATE_READY;

@@ -39,7 +39,8 @@ static sc_button_callback_t user_callback = NULL;
 
 static void maybe_call_user_callback(sc_button_t button,
                                      sc_button_event_t event) {
-  LOG_DBG("Calling user callback for button %d, event %d", button, event);
+  LOG_DBG("Calling user callback for button %d, event %d", (int)button,
+          (int)event);
   if (user_callback != NULL) {
     user_callback(button, event);
   } else {

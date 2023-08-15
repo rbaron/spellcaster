@@ -41,10 +41,10 @@ int main(void) {
   __ASSERT_NO_MSG(!sc_caster_init(caster_cb));
   __ASSERT_NO_MSG(!sc_ble_init());
 
-  sc_ble_set_advertising_data(1);
-  sc_ble_start_advertising();
-  k_msleep(2000);
-  sc_ble_stop_advertising();
+  // sc_ble_set_advertising_data(1);
+  // sc_ble_start_advertising();
+  // k_msleep(2000);
+  // sc_ble_stop_advertising();
 
   struct caster_cb_queue_item qitem;
   while (true) {

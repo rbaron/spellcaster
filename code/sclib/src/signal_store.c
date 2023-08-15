@@ -3,8 +3,6 @@
 #include <stdbool.h>
 #include <zephyr/logging/log.h>
 
-#define SC_SIGNAL_STORE_MAX_SIGNALS 1
-
 // LOG_MODULE_REGISTER(signal_store, CONFIG_SCLIB_LOG_LEVEL);
 LOG_MODULE_REGISTER(signal_store, LOG_LEVEL_DBG);
 
@@ -27,7 +25,7 @@ int sc_ss_init(void) {
 }
 
 int sc_ss_store(uint8_t slot, const struct sc_signal *signal) {
-  LOG_DBG("Storing signal with len %d", signal->len);
+  LOG_DBG("Storing signal with len %d on slot %d", signal->len, slot);
   struct stored_signal stored_sig = {
       .slot = slot,
       .version = 0,
