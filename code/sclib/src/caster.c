@@ -14,7 +14,7 @@
 #define SC_CASTER_DIST_THRESHOLD 3200
 
 // Thread.
-#define SC_CASTER_THREAD_STACK_SIZE (8 * 1024)
+#define SC_CASTER_THREAD_STACK_SIZE (4 * 1024)
 #define SC_CASTER_THREAD_PRIORITY 5
 
 // Logger.
@@ -61,8 +61,10 @@ static void button_callback(sc_button_t button, sc_button_event_t event) {
   }
 }
 
+// Test.
+struct sc_signal signal;
 static void process_buffer() {
-  struct sc_signal signal;
+  // struct sc_signal signal;
   if (sc_ss_load(/*slot=*/0, &signal)) {
     memcpy(signal.entries, fifo_buffer,
            fifo_buffer_len * sizeof(struct sc_accel_entry));

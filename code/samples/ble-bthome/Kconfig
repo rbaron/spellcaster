@@ -1,0 +1,14 @@
+source "Kconfig.zephyr"
+rsource "../../sclib/Kconfig"
+
+config SC_BLE_ADV_DURATION_MSEC
+	int "Advertising duration in ms."
+	default 500
+
+config SC_BLE_MIN_ADV_INTERVAL
+	int "Minimum advertising interval in milliseconds"
+	default 30
+
+config SC_BLE_MAX_ADV_INTERVAL
+	int "Maximum advertising interval in milliseconds"
+	default 40

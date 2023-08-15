@@ -3,7 +3,7 @@
 #include <stdbool.h>
 #include <zephyr/logging/log.h>
 
-#define SC_SIGNAL_STORE_MAX_SIGNALS 5
+#define SC_SIGNAL_STORE_MAX_SIGNALS 1
 
 // LOG_MODULE_REGISTER(signal_store, CONFIG_SCLIB_LOG_LEVEL);
 LOG_MODULE_REGISTER(signal_store, LOG_LEVEL_DBG);
