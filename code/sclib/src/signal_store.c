@@ -3,6 +3,9 @@
 #include <stdbool.h>
 #include <zephyr/logging/log.h>
 
+#include "sclib/flash_fs.h"
+#include "sclib/macros.h"
+
 // LOG_MODULE_REGISTER(signal_store, CONFIG_SCLIB_LOG_LEVEL);
 LOG_MODULE_REGISTER(signal_store, LOG_LEVEL_DBG);
 
@@ -18,6 +21,7 @@ struct stored_signal {
 static struct stored_signal store[SC_SIGNAL_STORE_MAX_SIGNALS];
 
 int sc_ss_init(void) {
+  RET_IF_ERR(sc_flash_fs_init());
   for (int i = 0; i < SC_SIGNAL_STORE_MAX_SIGNALS; i++) {
     store[i].has_signal = false;
   }

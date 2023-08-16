@@ -6,6 +6,7 @@
 #include "sclib/accel.h"
 #include "sclib/button.h"
 #include "sclib/dtw.h"
+#include "sclib/flash_fs.h"
 #include "sclib/led.h"
 #include "sclib/macros.h"
 #include "sclib/motion_detector.h"
@@ -14,7 +15,7 @@
 #define SC_CASTER_DIST_THRESHOLD 5000
 
 // Thread.
-#define SC_CASTER_THREAD_STACK_SIZE (4 * 1024)
+#define SC_CASTER_THREAD_STACK_SIZE (8 * 1024)
 #define SC_CASTER_THREAD_PRIORITY 5
 
 // Logger.
@@ -155,6 +156,11 @@ static void sc_caster_thread_fn(void *, void *, void *) {
       slot = 1;
       change_mode(&mode, &state, MODE_RECORD);
     } else if (msg.button == SC_BUTTON_A &&
+               msg.event == SC_BUTTON_EVENT_TRIPLE_PRESS) {
+      LOG_DBG("Switching to capture mode (slot 2)");
+      slot = 2;
+      change_mode(&mode, &state, MODE_RECORD);
+    } else if (msg.button == SC_BUTTON_A &&
                msg.event == SC_BUTTON_EVENT_LONG_PRESS) {
       LOG_DBG("Switching to replay mode");
       change_mode(&mode, &state, MODE_REPLAY);
@@ -178,15 +184,14 @@ static void sc_caster_thread_fn(void *, void *, void *) {
       }
     } else if (state == STATE_CAPTURING) {
       if (fifo_buffer_len == SC_SIGNAL_STORE_MAX_SAMPLES) {
-        LOG_DBG("Buffer full. Confirm?");
-        state = STATE_CONFIRMING;
-        k_msgq_purge(&button_event_msgq);
+        LOG_DBG("Buffer full. Discarding.");
+        state = STATE_WAITING;
+        fifo_buffer_len = 0;
       } else if (!sc_md_is_still(&md)) {
         fifo_buffer[fifo_buffer_len++] = entry;
       } else {
         LOG_DBG("Stopped capturing. Confirm?");
         state = STATE_CONFIRMING;
-        k_msgq_purge(&button_event_msgq);
       }
     } else if (state == STATE_CONFIRMING) {
       LOG_DBG("Will process buffer");

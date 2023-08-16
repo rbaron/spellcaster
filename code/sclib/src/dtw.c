@@ -3,21 +3,12 @@
 #include <math.h>
 #include <string.h>
 
-#define IMU_ENTRIES_MAX 150
+// 3s of data at 50 Hz minus 500ms removed from stillness detection.
+#define IMU_ENTRIES_MAX 125
 
 #define IDX(alen, blen, r, c) ((r) * (blen) + (c))
 
 #define MIN(x, y) (((x) < (y)) ? (x) : (y))
-
-// // TODO: remove this hack.
-// static size_t pow(size_t x, size_t y) {
-//   // size_t result = 1;
-//   // for (size_t i = 0; i < y; ++i) {
-//   //   result *= x;
-//   // }
-//   // return result;
-//   return x * x;
-// }
 
 static inline size_t dist(const struct sc_accel_entry *a,
                           const struct sc_accel_entry *b) {
@@ -28,10 +19,12 @@ static inline size_t dist(const struct sc_accel_entry *a,
 
 size_t dtw(const struct sc_accel_entry *a, size_t a_len,
            const struct sc_accel_entry *b, size_t b_len) {
+  // This eats up RAM FAST.
+  // TODO: consider FastDTW: https://cs.fit.edu/~pkc/papers/tdm04.pdf,
+  // which runs in O(n) space and time (!!).
   static size_t DTW[IMU_ENTRIES_MAX * IMU_ENTRIES_MAX];
 
-  // WHAT?
-  // memset(DTW, UINT32_MAX, sizeof(DTW));
+  // Ideally set to infinity, but that's too large.
   memset(DTW, 0xff, sizeof(DTW));
 
   DTW[IDX(a_len, b_len, 0, 0)] = 0;
