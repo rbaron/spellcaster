@@ -13,7 +13,7 @@ static struct fs_mount_t lfs_storage_mnt = {
     .type = FS_LITTLEFS,
     .fs_data = &storage,
     .storage_dev = (void *)FLASH_AREA_ID(storage),
-    .mnt_point = "/lfs",
+    .mnt_point = SC_FLASH_FS_MOUNT_POINT,
 };
 
 int sc_flash_fs_init() {
