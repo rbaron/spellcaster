@@ -4024,30 +4024,6 @@
     )
   )
 
-  (symbol (lib_id "Mechanical:MountingHole") (at 256.54 17.78 0) (unit 1)
-    (in_bom no) (on_board yes) (dnp no) (fields_autoplaced)
-    (uuid f7a5ac28-ebac-462a-98e9-6da45ebf3e9a)
-    (property "Reference" "H1" (at 259.08 17.145 0)
-      (effects (font (size 1.27 1.27)) (justify left))
-    )
-    (property "Value" "MountingHole" (at 259.08 19.685 0)
-      (effects (font (size 1.27 1.27)) (justify left))
-    )
-    (property "Footprint" "MountingHole:MountingHole_2.2mm_M2_Pad_Via" (at 256.54 17.78 0)
-      (effects (font (size 1.27 1.27)) hide)
-    )
-    (property "Datasheet" "~" (at 256.54 17.78 0)
-      (effects (font (size 1.27 1.27)) hide)
-    )
-    (instances
-      (project "spellcaster"
-        (path "/bca210d0-b1b0-44be-885f-55d81883bdbb"
-          (reference "H1") (unit 1)
-        )
-      )
-    )
-  )
-
   (symbol (lib_id "power:GND") (at 107.95 115.57 0) (unit 1)
     (in_bom yes) (on_board yes) (dnp no) (fields_autoplaced)
     (uuid fc937b9d-822f-4981-9cb9-e8ef2d27ad4c)
