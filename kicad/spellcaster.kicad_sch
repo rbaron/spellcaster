@@ -3674,7 +3674,7 @@
   )
 
   (symbol (lib_id "Motor:Motor_DC") (at 196.215 28.575 0) (unit 1)
-    (in_bom yes) (on_board yes) (dnp no) (fields_autoplaced)
+    (in_bom no) (on_board yes) (dnp no) (fields_autoplaced)
     (uuid 7a850fd7-db61-4f4f-b10f-9302ed6ea911)
     (property "Reference" "M1" (at 201.295 30.48 0)
       (effects (font (size 1.27 1.27)) (justify left))
