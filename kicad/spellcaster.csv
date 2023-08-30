@@ -8,7 +8,7 @@ Comment,Designator,Footprint,LCSC
 "1.2p","C8","Capacitor_SMD:C_0402_1005Metric","C1551"
 "1u","C9,C15","Capacitor_SMD:C_0402_1005Metric","C52923"
 "LED","D1","LED_SMD:LED_0603_1608Metric","C2286"
-"1N4148W","D2","Diode_SMD:D_SOD-123","C2128"
+"1N4148W","D2","Diode_SMD:D_SOD-323","C2128"
 "4.7nH","L1","Inductor_SMD:L_0402_1005Metric","C963987"
 "2.2nH","L2","Inductor_SMD:L_0402_1005Metric","C108254"
 "15nH","L3","Inductor_SMD:L_0402_1005Metric","C27143"
