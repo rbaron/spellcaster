@@ -13,7 +13,6 @@ add_library(sclib STATIC
 	src/motion_detector.c
 	src/sensors.c
 	src/signal_store.c
-	src/shtc3.c
 )
 
 target_include_directories(sclib PRIVATE include)

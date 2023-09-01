@@ -167,9 +167,9 @@ static void sc_caster_thread_fn(void *, void *, void *) {
     }
 
     // FIFO is not ready (hopefully).
-    if (sc_accel_read(&entry)) {
-      continue;
-    }
+    // if (sc_accel_read(&entry)) {
+    //   continue;
+    // }
     // LOG_DBG("%10d %10d %10d %10d %10d %10d", entry.ax, entry.ay, entry.az,
     //         entry.gx, entry.gy, entry.gz);
 
@@ -214,7 +214,7 @@ int sc_caster_init(sc_caster_callback_t callback) {
   LOG_DBG("Initializing");
   RET_IF_ERR(sc_led_init());
   RET_IF_ERR(sc_button_init());
-  RET_IF_ERR(sc_accel_init());
+  // RET_IF_ERR(sc_accel_init());
   RET_IF_ERR(sc_ss_init());
 
   sc_md_init(&md);
@@ -224,12 +224,12 @@ int sc_caster_init(sc_caster_callback_t callback) {
   user_callback = callback;
 
   // Set thread name.
-  k_tid_t tid =
-      k_thread_create(&sc_caster_thread, sc_caster_stack_area,
-                      K_THREAD_STACK_SIZEOF(sc_caster_stack_area),
-                      sc_caster_thread_fn, /*p1=*/NULL, /*p2=*/NULL,
-                      /*p3=*/NULL, SC_CASTER_THREAD_PRIORITY, /*options=*/0,
-                      /*delay=*/K_NO_WAIT);
-  k_thread_name_set(tid, "sc_caster_thread");
+  // k_tid_t tid =
+  //     k_thread_create(&sc_caster_thread, sc_caster_stack_area,
+  //                     K_THREAD_STACK_SIZEOF(sc_caster_stack_area),
+  //                     sc_caster_thread_fn, /*p1=*/NULL, /*p2=*/NULL,
+  //                     /*p3=*/NULL, SC_CASTER_THREAD_PRIORITY, /*options=*/0,
+  //                     /*delay=*/K_NO_WAIT);
+  // k_thread_name_set(tid, "sc_caster_thread");
   return 0;
 }

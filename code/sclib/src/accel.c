@@ -4,6 +4,7 @@
 #include <zephyr/kernel.h>
 #include <zephyr/logging/log.h>
 
+#include "sclib/lsm6dsl_regs.h"
 #include "sclib/macros.h"
 #include "sclib/mpu6050_regs.h"
 
@@ -11,6 +12,8 @@
 #define PARSEU16(buf, i) (((uint16_t)buf[i] << 8) | (uint16_t)buf[i + 1])
 
 LOG_MODULE_REGISTER(accel, CONFIG_SCLIB_LOG_LEVEL);
+
+#if DT_NODE_EXISTS(DT_NODELABEL(mpu))
 
 static const struct i2c_dt_spec mpu = I2C_DT_SPEC_GET(DT_NODELABEL(mpu));
 
@@ -76,3 +79,108 @@ int sc_accel_read(struct sc_accel_entry *entry) {
 
   return 0;
 }
+
+#elif DT_NODE_EXISTS(DT_NODELABEL(lsm6dsl))
+
+static const struct i2c_dt_spec mpu = I2C_DT_SPEC_GET(DT_NODELABEL(lsm6dsl));
+
+static int write_reg_16(uint8_t reg, int16_t val) {
+  uint8_t buf[3];
+  buf[0] = reg;
+  buf[1] = val >> 8;
+  buf[2] = val & 0xff;
+  return i2c_write_dt(&mpu, buf, sizeof(buf));
+}
+
+int sc_accel_init(void) {
+  RET_IF_ERR_MSG(!device_is_ready(mpu.bus), "LSM6DSL is not ready");
+
+  uint8_t write_buf[1] = {LSM6DSL_WHO_AM_I};
+  uint8_t read_buf[1];
+  RET_IF_ERR(i2c_write_read_dt(&mpu, write_buf, sizeof(write_buf), read_buf,
+                               sizeof(read_buf)));
+  LOG_ERR("WHO_AM_I: 0x%02x", read_buf[0]);
+
+  // To reset FIFO, set FIFO_MODE to BYPASS and then back to FIFO.
+  RET_IF_ERR(i2c_reg_write_byte_dt(&mpu, LSM6DSL_FIFO_CTRL5, 0x00));
+  RET_IF_ERR(i2c_reg_write_byte_dt(&mpu, LSM6DSL_FIFO_CTRL5, 0x01));
+
+  // Set accel to 52 Hz.
+  RET_IF_ERR(i2c_reg_write_byte_dt(&mpu, LSM6DSL_CTRL1_XL, 0x30));
+
+  // Set gyro to 52 Hz.
+  RET_IF_ERR(i2c_reg_write_byte_dt(&mpu, LSM6DSL_CTRL2_G, 0x30));
+
+  // // Set FIFO to 52 Hz & FIFO mode.
+  RET_IF_ERR(
+      i2c_reg_write_byte_dt(&mpu, LSM6DSL_FIFO_CTRL5, (0b0011 << 3) | 0b001));
+
+  // Set FIFO to 12.5  Hz & FIFO mode.
+  // RET_IF_ERR(
+  //     i2c_reg_write_byte_dt(&mpu, LSM6DSL_FIFO_CTRL5, (0b0001 << 3) |
+  //     0b001));
+
+  // Enable Accel in FIFO.
+  RET_IF_ERR(i2c_reg_write_byte_dt(&mpu, LSM6DSL_FIFO_CTRL3, 0x01));
+
+  // Enable accel and gyro in fifo.
+  // RET_IF_ERR(i2c_reg_write_byte_dt(&mpu, LSM6DSL_FIFO_CTRL3, (0b1 << 3) |
+  // 0b1));
+
+  // // Upload offsets. Not sure this is actually helpful.
+  // RET_IF_ERR(write_reg_16(MPU6050_XA_OFFS_H, calibration_offsets[0]));
+  // RET_IF_ERR(write_reg_16(MPU6050_YA_OFFS_H, calibration_offsets[1]));
+  // RET_IF_ERR(write_reg_16(MPU6050_ZA_OFFS_H, calibration_offsets[2]));
+  // RET_IF_ERR(write_reg_16(MPU6050_XG_OFFS_H, calibration_offsets[3]));
+  // RET_IF_ERR(write_reg_16(MPU6050_YG_OFFS_H, calibration_offsets[4]));
+  // RET_IF_ERR(write_reg_16(MPU6050_ZG_OFFS_H, calibration_offsets[5]));
+
+  // // Set clock source x gyro.
+  // RET_IF_ERR(i2c_reg_write_byte_dt(&mpu, MPU6050_PWR_MGMT_1, 0x01));
+  // // Set gyro range to +/- 500 deg/s.
+  // RET_IF_ERR(i2c_reg_write_byte_dt(&mpu, MPU6050_GYRO_CONFIG, 0x01));
+  // // Enable accel and gyro in fifo.
+  // RET_IF_ERR(i2c_reg_write_byte_dt(&mpu, MPU6050_FIFO_EN, 0x78));
+  // // Set fifo rate to 50 Hz.
+  // RET_IF_ERR(i2c_reg_write_byte_dt(&mpu, MPU6050_SMPLRT_DIV, 159));
+  // // Enable and reset fifo.
+  // RET_IF_ERR(i2c_reg_write_byte_dt(&mpu, MPU6050_USER_CTRL, 0x44));
+  return 0;
+}
+
+#define PARSES16HL(buf, i) (((int16_t)buf[i] << 8) | (int16_t)buf[i + 3])
+
+int sc_accel_read(struct sc_accel_entry *entry) {
+  // Read fifo count.
+  uint8_t write_buf[1] = {LSM5DSL_FIFO_STATUS1};
+  uint8_t fifo_count;
+  RET_IF_ERR(
+      i2c_write_read_dt(&mpu, write_buf, sizeof(write_buf), &fifo_count, 1));
+
+  // Read fifo.
+  if (fifo_count <= 0) {
+    return -1;
+  }
+
+  // uint8_t fifo_buf[6 * 2];
+  uint8_t fifo_buf[6];
+  write_buf[0] = LSM6DSL_FIFO_DATA_OUT_H;
+  RET_IF_ERR(
+      i2c_write_read_dt(&mpu, write_buf, 1, fifo_buf, sizeof(fifo_buf) / 2));
+
+  write_buf[0] = LSM6DSL_FIFO_DATA_OUT_L;
+  RET_IF_ERR(i2c_write_read_dt(&mpu, write_buf, 1,
+                               fifo_buf + sizeof(fifo_buf) / 2,
+                               sizeof(fifo_buf) / 2));
+
+  entry->ax = PARSES16HL(fifo_buf, 0);
+  entry->ay = PARSES16HL(fifo_buf, 1);
+  entry->az = PARSES16HL(fifo_buf, 2);
+  // entry->gx = PARSES16HL(fifo_buf, 3);
+  // entry->gy = PARSES16HL(fifo_buf, 4);
+  // entry->gz = PARSES16HL(fifo_buf, 5);
+
+  return 0;
+}
+
+#endif  // DT_NODE_EXISTS(DT_NODELABEL(lsm6dsl))

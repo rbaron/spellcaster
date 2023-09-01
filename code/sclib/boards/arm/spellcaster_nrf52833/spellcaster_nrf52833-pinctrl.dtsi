@@ -30,18 +30,19 @@
 		};
 	};
 
-	/* Configure i2c0 instance to use pins 24 (SDA) & 13 (SCL). */
+	// TODO: move to overlay.
+	/* Configure i2c0 instance to use pins 15 (SDA) & 17 (SCL). */
 	i2c0_default: i2c0_default {
 		group1 {
-			psels = <NRF_PSEL(TWIM_SDA, 0, 24)>,
-							<NRF_PSEL(TWIM_SCL, 0, 13)>;
+			psels = <NRF_PSEL(TWIM_SDA, 0, 15)>,
+							<NRF_PSEL(TWIM_SCL, 0, 17)>;
 		};
 	};
 
 	i2c0_sleep: i2c0_sleep {
 		group1 {
-			psels = <NRF_PSEL(TWIM_SDA, 0, 24)>,
-							<NRF_PSEL(TWIM_SCL, 0, 13)>;
+			psels = <NRF_PSEL(TWIM_SDA, 0, 15)>,
+							<NRF_PSEL(TWIM_SCL, 0, 17)>;
 			low-power-enable;
 		};
 	};

@@ -1,0 +1,23 @@
+
+&i2c0 {
+	compatible = "nordic,nrf-twi";
+	status = "okay";
+	pinctrl-0 = <&i2c0_default>;
+	pinctrl-1 = <&i2c0_sleep>;
+	pinctrl-names = "default", "sleep";
+
+	shtc3: shtc3@70 {
+		compatible = "i2c-device";
+		reg = <0x70>;
+		label = "SHTC3";
+	};
+
+	mpu: mpu@68 {
+		// https: //github.com/zephyrproject-rtos/zephyr/blob/d11c0a1664f6052e68c6eebd35aa5aba88e7c290/samples/sensor/mpu6050/boards/nrf52dk_nrf52832.overlay#L8
+		// compatible = "invensense,mpu6050";
+		compatible = "i2c-device";
+		reg = <0x68>;
+		status = "okay";
+		label = "MPU6050";
+	};
+};

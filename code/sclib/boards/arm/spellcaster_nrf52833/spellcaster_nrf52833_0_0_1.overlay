@@ -1,0 +1,15 @@
+
+&i2c0 {
+	compatible = "nordic,nrf-twi";
+	status = "okay";
+	pinctrl-0 = <&i2c0_default>;
+	pinctrl-1 = <&i2c0_sleep>;
+	pinctrl-names = "default", "sleep";
+
+	lsm6dsl: lsm6dsl@6a {
+		compatible = "i2c-device";
+		reg = <0x6a>;
+		status = "okay";
+		label = "LSM6DSL";
+	};
+};

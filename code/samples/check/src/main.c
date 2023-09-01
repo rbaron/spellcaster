@@ -13,5 +13,6 @@ int main(void) {
       LOG_DBG("%10d %10d %10d %10d %10d %10d", entry.ax, entry.ay, entry.az,
               entry.gx, entry.gy, entry.gz);
     }
+    k_sleep(K_MSEC(10));
   }
 }
