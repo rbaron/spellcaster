@@ -1,0 +1,16 @@
+{
+	"folders": [
+		{
+			"path": "."
+		},
+		{
+			"path": "../../sclib"
+		}
+	],
+	"settings": {
+		"C_Cpp.autoAddFileAssociations": false,
+		"nrf-connect.applications": [
+			"${workspaceFolder}"
+		]
+	}
+}

@@ -28,14 +28,9 @@
 	buttons {
 		compatible = "gpio-keys";
 		button_a: button_a {
-			// P1.09 (from my hacked parasite board).
-			gpios = <&gpio1 9 (GPIO_PULL_UP | GPIO_ACTIVE_LOW)>;
+			// P0.30.
+			gpios = <&gpio0 30 (GPIO_PULL_UP | GPIO_ACTIVE_LOW)>;
 			label = "Push button A";
-		};
-		button_b: button_b {
-			// P0.10 (from my hacked parasite board).
-			gpios = <&gpio0 10 (GPIO_PULL_UP | GPIO_ACTIVE_LOW)>;
-			label = "Push button B";
 		};
 	};
 };

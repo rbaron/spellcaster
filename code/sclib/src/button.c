@@ -29,10 +29,6 @@ static button_cfg_t button_cfgs[] = {
      .handled_long_press = false,
      .n_presses = 0,
      .button_dt = GPIO_DT_SPEC_GET(DT_NODELABEL(button_a), gpios)},
-    {.button = SC_BUTTON_B,
-     .handled_long_press = false,
-     .n_presses = 0,
-     .button_dt = GPIO_DT_SPEC_GET(DT_NODELABEL(button_b), gpios)},
 };
 
 static sc_button_callback_t user_callback = NULL;
