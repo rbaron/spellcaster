@@ -11,6 +11,8 @@
 #define PARSES16(buf, i) (((int16_t)buf[i] << 8) | (int16_t)buf[i + 1])
 #define PARSEU16(buf, i) (((uint16_t)buf[i] << 8) | (uint16_t)buf[i + 1])
 
+#define PARSES16BE(buf, i) (((int16_t)buf[i + 1] << 8) | (int16_t)buf[i])
+
 LOG_MODULE_REGISTER(accel, CONFIG_SCLIB_LOG_LEVEL);
 
 #if DT_NODE_EXISTS(DT_NODELABEL(mpu))
@@ -121,34 +123,20 @@ int sc_accel_init(void) {
   //     0b001));
 
   // Enable Accel in FIFO.
-  RET_IF_ERR(i2c_reg_write_byte_dt(&mpu, LSM6DSL_FIFO_CTRL3, 0x01));
+  // RET_IF_ERR(i2c_reg_write_byte_dt(&mpu, LSM6DSL_FIFO_CTRL3, 0x01));
 
   // Enable accel and gyro in fifo.
-  // RET_IF_ERR(i2c_reg_write_byte_dt(&mpu, LSM6DSL_FIFO_CTRL3, (0b1 << 3) |
-  // 0b1));
+  RET_IF_ERR(i2c_reg_write_byte_dt(&mpu, LSM6DSL_FIFO_CTRL3, (0b1 << 3) | 0b1));
 
-  // // Upload offsets. Not sure this is actually helpful.
-  // RET_IF_ERR(write_reg_16(MPU6050_XA_OFFS_H, calibration_offsets[0]));
-  // RET_IF_ERR(write_reg_16(MPU6050_YA_OFFS_H, calibration_offsets[1]));
-  // RET_IF_ERR(write_reg_16(MPU6050_ZA_OFFS_H, calibration_offsets[2]));
-  // RET_IF_ERR(write_reg_16(MPU6050_XG_OFFS_H, calibration_offsets[3]));
-  // RET_IF_ERR(write_reg_16(MPU6050_YG_OFFS_H, calibration_offsets[4]));
-  // RET_IF_ERR(write_reg_16(MPU6050_ZG_OFFS_H, calibration_offsets[5]));
-
-  // // Set clock source x gyro.
-  // RET_IF_ERR(i2c_reg_write_byte_dt(&mpu, MPU6050_PWR_MGMT_1, 0x01));
-  // // Set gyro range to +/- 500 deg/s.
-  // RET_IF_ERR(i2c_reg_write_byte_dt(&mpu, MPU6050_GYRO_CONFIG, 0x01));
-  // // Enable accel and gyro in fifo.
-  // RET_IF_ERR(i2c_reg_write_byte_dt(&mpu, MPU6050_FIFO_EN, 0x78));
-  // // Set fifo rate to 50 Hz.
-  // RET_IF_ERR(i2c_reg_write_byte_dt(&mpu, MPU6050_SMPLRT_DIV, 159));
-  // // Enable and reset fifo.
-  // RET_IF_ERR(i2c_reg_write_byte_dt(&mpu, MPU6050_USER_CTRL, 0x44));
   return 0;
 }
 
-#define PARSES16HL(buf, i) (((int16_t)buf[i] << 8) | (int16_t)buf[i + 3])
+static inline int16_t read_fifo_entry() {
+  uint8_t write_buf[1] = {LSM6DSL_FIFO_DATA_OUT_L};
+  uint8_t read_buf[2];
+  RET_IF_ERR(i2c_write_read_dt(&mpu, write_buf, 1, read_buf, sizeof(read_buf)));
+  return PARSES16BE(read_buf, 0);
+}
 
 int sc_accel_read(struct sc_accel_entry *entry) {
   // Read fifo count.
@@ -162,23 +150,12 @@ int sc_accel_read(struct sc_accel_entry *entry) {
     return -1;
   }
 
-  // uint8_t fifo_buf[6 * 2];
-  uint8_t fifo_buf[6];
-  write_buf[0] = LSM6DSL_FIFO_DATA_OUT_H;
-  RET_IF_ERR(
-      i2c_write_read_dt(&mpu, write_buf, 1, fifo_buf, sizeof(fifo_buf) / 2));
-
-  write_buf[0] = LSM6DSL_FIFO_DATA_OUT_L;
-  RET_IF_ERR(i2c_write_read_dt(&mpu, write_buf, 1,
-                               fifo_buf + sizeof(fifo_buf) / 2,
-                               sizeof(fifo_buf) / 2));
-
-  entry->ax = PARSES16HL(fifo_buf, 0);
-  entry->ay = PARSES16HL(fifo_buf, 1);
-  entry->az = PARSES16HL(fifo_buf, 2);
-  // entry->gx = PARSES16HL(fifo_buf, 3);
-  // entry->gy = PARSES16HL(fifo_buf, 4);
-  // entry->gz = PARSES16HL(fifo_buf, 5);
+  entry->gx = read_fifo_entry();
+  entry->gy = read_fifo_entry();
+  entry->gz = read_fifo_entry();
+  entry->ax = read_fifo_entry();
+  entry->ay = read_fifo_entry();
+  entry->az = read_fifo_entry();
 
   return 0;
 }
