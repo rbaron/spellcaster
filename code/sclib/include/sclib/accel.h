@@ -23,4 +23,6 @@ int sc_accel_init(void);
 
 int sc_accel_read(struct sc_accel_entry *entry);
 
+int sc_accel_reset_fifo(void);
+
 #endif  // _SCLIB_ACCEL_H_

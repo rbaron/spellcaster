@@ -70,9 +70,27 @@ static void button_callback(sc_button_t button, sc_button_event_t event) {
   }
 }
 
+// Dumps both accelerometer and motion detector data in CSV format, with header.
+static void dump_buffer() {
+  LOG_DBG("\n---BEGIN DUMP---");
+  LOG_DBG("ax,ay,az,gx,gy,gz");
+  for (size_t i = 0; i < fifo_buffer_len; i++) {
+    LOG_DBG("%d,%d,%d,%d,%d,%d", fifo_buffer[i].ax, fifo_buffer[i].ay,
+            fifo_buffer[i].az, fifo_buffer[i].gx, fifo_buffer[i].gy,
+            fifo_buffer[i].gz);
+  }
+  LOG_DBG("\n---END DUMP---");
+}
+
 // Test.
 struct sc_signal signal;
 static int process_buffer() {
+  dump_buffer();
+  sc_led_flash(2);
+  k_msleep(2000);
+  __ASSERT_NO_MSG(!sc_accel_reset_fifo());
+  return 0;
+
   if (mode == MODE_RECORD) {
     LOG_DBG("Will store the signal on slot %d.", slot);
     memcpy(signal.entries, fifo_buffer,
@@ -139,7 +157,9 @@ static void change_mode(enum Mode *mode, enum State *state,
 static void sc_caster_thread_fn(void *, void *, void *) {
   struct button_event_queue_el msg;
   struct sc_accel_entry entry;
+
   while (true) {
+    /*
     // Get button event from queue.
     if (k_msgq_get(&button_event_msgq, &msg, K_NO_WAIT)) {
       msg.button = SC_BUTTON_NONE;
@@ -166,17 +186,18 @@ static void sc_caster_thread_fn(void *, void *, void *) {
       change_mode(&mode, &state, MODE_REPLAY);
     }
 
+    */
     // FIFO is not ready (hopefully).
     if (sc_accel_read(&entry)) {
       continue;
     }
-    // LOG_DBG("%10d %10d %10d %10d %10d %10d", entry.ax, entry.ay, entry.az,
-    //         entry.gx, entry.gy, entry.gz);
 
     sc_md_ingest(&md, &entry);
+    // continue;
 
     // We are not capturing.
     if (state == STATE_READY) {
+      // if (!sc_md_is_still(&md)) {
       if (!sc_md_is_still(&md)) {
         LOG_DBG("Will start to capture");
         fifo_buffer_len = 0;

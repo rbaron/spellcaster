@@ -10,8 +10,8 @@
 #define MD_ACCEL_DIFF_THRESHOLD 2048
 #define MD_STILL_Y_ACCEL_THRESHOLD 2048
 
-LOG_MODULE_REGISTER(motion_detector, CONFIG_SCLIB_LOG_LEVEL);
-// LOG_MODULE_REGISTER(motion_detector, LOG_LEVEL_DBG);
+// LOG_MODULE_REGISTER(motion_detector, CONFIG_SCLIB_LOG_LEVEL);
+LOG_MODULE_REGISTER(motion_detector, LOG_LEVEL_DBG);
 
 static uint16_t abs(int16_t x) {
   return x < 0 ? -x : x;
@@ -51,7 +51,7 @@ void sc_md_ingest(struct sc_motion_detector *md,
                       abs(diff.gz) < MD_ACCEL_DIFF_THRESHOLD;
 
   bool is_still_horiz_now =
-      is_still_now && abs(entry->ay) < MD_STILL_Y_ACCEL_THRESHOLD;
+      is_still_now && (abs(entry->ay) < MD_STILL_Y_ACCEL_THRESHOLD);
 
   // Reset the timer if we're not still horizontal.
   if (!is_still_horiz_now) {
@@ -70,5 +70,6 @@ void sc_md_ingest(struct sc_motion_detector *md,
 }
 
 bool sc_md_is_still(const struct sc_motion_detector *md) {
+  // LOG_DBG("sc_md_is_still: %d", md->is_still);
   return md->is_still;
 }

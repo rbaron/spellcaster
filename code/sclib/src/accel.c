@@ -14,6 +14,7 @@
 #define PARSES16BE(buf, i) (((int16_t)buf[i + 1] << 8) | (int16_t)buf[i])
 
 LOG_MODULE_REGISTER(accel, CONFIG_SCLIB_LOG_LEVEL);
+// LOG_MODULE_REGISTER(accel, LOG_LEVEL_DBG);
 
 #if DT_NODE_EXISTS(DT_NODELABEL(mpu))
 
@@ -101,11 +102,11 @@ int sc_accel_init(void) {
   uint8_t read_buf[1];
   RET_IF_ERR(i2c_write_read_dt(&mpu, write_buf, sizeof(write_buf), read_buf,
                                sizeof(read_buf)));
-  LOG_ERR("WHO_AM_I: 0x%02x", read_buf[0]);
+  // LOG_ERR("WHO_AM_I: 0x%02x", read_buf[0]);
 
   // To reset FIFO, set FIFO_MODE to BYPASS and then back to FIFO.
-  RET_IF_ERR(i2c_reg_write_byte_dt(&mpu, LSM6DSL_FIFO_CTRL5, 0x00));
-  RET_IF_ERR(i2c_reg_write_byte_dt(&mpu, LSM6DSL_FIFO_CTRL5, 0x01));
+  // RET_IF_ERR(i2c_reg_write_byte_dt(&mpu, LSM6DSL_FIFO_CTRL5, 0x00));
+  // RET_IF_ERR(i2c_reg_write_byte_dt(&mpu, LSM6DSL_FIFO_CTRL5, 0x01));
 
   // Set accel to 52 Hz.
   RET_IF_ERR(i2c_reg_write_byte_dt(&mpu, LSM6DSL_CTRL1_XL, 0x30));
@@ -113,17 +114,11 @@ int sc_accel_init(void) {
   // Set gyro to 52 Hz.
   RET_IF_ERR(i2c_reg_write_byte_dt(&mpu, LSM6DSL_CTRL2_G, 0x30));
 
-  // // Set FIFO to 52 Hz & FIFO mode.
-  RET_IF_ERR(
-      i2c_reg_write_byte_dt(&mpu, LSM6DSL_FIFO_CTRL5, (0b0011 << 3) | 0b001));
-
-  // Set FIFO to 12.5  Hz & FIFO mode.
+  // Set FIFO to 52 Hz & FIFO mode.
   // RET_IF_ERR(
-  //     i2c_reg_write_byte_dt(&mpu, LSM6DSL_FIFO_CTRL5, (0b0001 << 3) |
+  //     i2c_reg_write_byte_dt(&mpu, LSM6DSL_FIFO_CTRL5, (0b0011 << 3) |
   //     0b001));
-
-  // Enable Accel in FIFO.
-  // RET_IF_ERR(i2c_reg_write_byte_dt(&mpu, LSM6DSL_FIFO_CTRL3, 0x01));
+  RET_IF_ERR(sc_accel_reset_fifo());
 
   // Enable accel and gyro in fifo.
   RET_IF_ERR(i2c_reg_write_byte_dt(&mpu, LSM6DSL_FIFO_CTRL3, (0b1 << 3) | 0b1));
@@ -147,6 +142,7 @@ int sc_accel_read(struct sc_accel_entry *entry) {
 
   // Read fifo.
   if (fifo_count <= 0) {
+    LOG_DBG("FIFO empty");
     return -1;
   }
 
@@ -157,6 +153,19 @@ int sc_accel_read(struct sc_accel_entry *entry) {
   entry->ay = read_fifo_entry();
   entry->az = read_fifo_entry();
 
+  return 0;
+}
+
+int sc_accel_reset_fifo(void) {
+  // To reset FIFO, set FIFO_MODE to BYPASS and then back to FIFO.
+  RET_IF_ERR(i2c_reg_write_byte_dt(&mpu, LSM6DSL_FIFO_CTRL5, 0x00));
+  // Set FIFO to 52 Hz & FIFO mode (blocks if FIFO is full).
+  // RET_IF_ERR(
+  //     i2c_reg_write_byte_dt(&mpu, LSM6DSL_FIFO_CTRL5, (0b0011 << 3) |
+  //     0b001));
+  // Set FIFO to 52 Hz & continuous mode (old data is auto evicted).
+  RET_IF_ERR(
+      i2c_reg_write_byte_dt(&mpu, LSM6DSL_FIFO_CTRL5, (0b0011 << 3) | 0b110));
   return 0;
 }
 
