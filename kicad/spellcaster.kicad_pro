@@ -412,7 +412,7 @@
     "pinned_symbol_libs": []
   },
   "meta": {
-    "filename": "one_bit_wonder.kicad_pro",
+    "filename": "spellcaster.kicad_pro",
     "version": 1
   },
   "net_settings": {
@@ -470,7 +470,7 @@
       "idf": "",
       "netlist": "",
       "specctra_dsn": "",
-      "step": "../../../../stl/one-bit-wonder/one_bit_wonder-pcb.step",
+      "step": "../3dprint/spellcaster-pcb.step",
       "vrml": ""
     },
     "page_layout_descr_file": ""
