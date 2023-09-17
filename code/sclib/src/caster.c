@@ -85,11 +85,11 @@ static void dump_buffer() {
 // Test.
 struct sc_signal signal;
 static int process_buffer() {
-  dump_buffer();
-  sc_led_flash(2);
-  k_msleep(2000);
-  __ASSERT_NO_MSG(!sc_accel_reset_fifo());
-  return 0;
+  // dump_buffer();
+  // sc_led_flash(2);
+  // k_msleep(2000);
+  // __ASSERT_NO_MSG(!sc_accel_reset_fifo());
+  // return 0;
 
   if (mode == MODE_RECORD) {
     LOG_DBG("Will store the signal on slot %d.", slot);
@@ -124,14 +124,16 @@ static int process_buffer() {
       if (user_callback != NULL) {
         user_callback(maybe_slot);
       }
-      k_msleep(1000);
-      return 0;
+      goto END;
     } else {
       LOG_DBG("Not matched!");
     }
   }
   sc_led_flash(4);
-  k_msleep(1000);
+
+END:
+  k_msleep(2000);
+  __ASSERT_NO_MSG(!sc_accel_reset_fifo());
   return 0;
 }
 
@@ -159,7 +161,6 @@ static void sc_caster_thread_fn(void *, void *, void *) {
   struct sc_accel_entry entry;
 
   while (true) {
-    /*
     // Get button event from queue.
     if (k_msgq_get(&button_event_msgq, &msg, K_NO_WAIT)) {
       msg.button = SC_BUTTON_NONE;
@@ -186,14 +187,12 @@ static void sc_caster_thread_fn(void *, void *, void *) {
       change_mode(&mode, &state, MODE_REPLAY);
     }
 
-    */
     // FIFO is not ready (hopefully).
     if (sc_accel_read(&entry)) {
       continue;
     }
 
     sc_md_ingest(&md, &entry);
-    // continue;
 
     // We are not capturing.
     if (state == STATE_READY) {
