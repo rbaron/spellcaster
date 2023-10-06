@@ -1,5 +1,6 @@
 #include "sclib/caster.h"
 
+#include <zephyr/drivers/gpio.h>
 #include <zephyr/kernel.h>
 #include <zephyr/logging/log.h>
 
@@ -70,7 +71,7 @@ static void button_callback(sc_button_t button, sc_button_event_t event) {
   }
 }
 
-// Dumps both accelerometer and motion detector data in CSV format, with header.
+// mps both accelerometer and motion detector data in CSV format, with header.
 static void dump_buffer() {
   LOG_DBG("\n---BEGIN DUMP---");
   LOG_DBG("ax,ay,az,gx,gy,gz");
@@ -189,15 +190,22 @@ static void sc_caster_thread_fn(void *, void *, void *) {
 
     // FIFO is not ready (hopefully).
     if (sc_accel_read(&entry)) {
+      k_msleep(10);
       continue;
     }
 
     sc_md_ingest(&md, &entry);
 
+    if (sc_md_is_inactive(&md)) {
+      LOG_DBG("Still -- going to sleep.");
+      // End thread. A new one will be created when we wake up.
+      sc_accel_sleep();
+      return;
+    }
+
     // We are not capturing.
     if (state == STATE_READY) {
-      // if (!sc_md_is_still(&md)) {
-      if (!sc_md_is_still(&md)) {
+      if (!sc_md_is_horizontal(&md)) {
         LOG_DBG("Will start to capture");
         fifo_buffer_len = 0;
         state = STATE_CAPTURING;
@@ -207,7 +215,7 @@ static void sc_caster_thread_fn(void *, void *, void *) {
         LOG_DBG("Buffer full. Discarding.");
         state = STATE_WAITING;
         fifo_buffer_len = 0;
-      } else if (!sc_md_is_still(&md)) {
+      } else if (!sc_md_is_horizontal(&md)) {
         fifo_buffer[fifo_buffer_len++] = entry;
       } else {
         LOG_DBG("Stopped capturing. Confirm?");
@@ -221,12 +229,32 @@ static void sc_caster_thread_fn(void *, void *, void *) {
       fifo_buffer_len = 0;
       state = STATE_WAITING;
     } else if (state == STATE_WAITING) {
-      if (sc_md_is_still(&md)) {
+      if (sc_md_is_horizontal(&md)) {
         LOG_DBG("Will get ready");
         state = STATE_READY;
         sc_led_flash(1);
       }
     }
+  }
+}
+
+// User callback for accel events.
+static void accel_evt_handler(enum sc_accel_evt evt) {
+  if (evt == SC_ACCEL_WAKEUP_EVT) {
+    LOG_DBG("Accel event: wakeup -- will start caster thread.");
+    __ASSERT_NO_MSG(!sc_accel_init());
+    sc_led_flash(1);
+    sc_md_init(&md);
+    // Kick off caster thread.
+    k_tid_t tid =
+        k_thread_create(&sc_caster_thread, sc_caster_stack_area,
+                        K_THREAD_STACK_SIZEOF(sc_caster_stack_area),
+                        sc_caster_thread_fn, /*p1=*/NULL, /*p2=*/NULL,
+                        /*p3=*/NULL, SC_CASTER_THREAD_PRIORITY, /*options=*/0,
+                        /*delay=*/K_NO_WAIT);
+    k_thread_name_set(tid, "sc_caster_thread");
+  } else if (evt == SC_ACCEL_SLEEP_EVT) {
+    LOG_DBG("Accel event: sleep");
   }
 }
 
@@ -237,6 +265,8 @@ int sc_caster_init(sc_caster_callback_t callback) {
   RET_IF_ERR(sc_accel_init());
   RET_IF_ERR(sc_ss_init());
 
+  sc_accel_set_evt_handler(accel_evt_handler);
+
   sc_led_flash(1);
 
   sc_md_init(&md);
@@ -245,7 +275,7 @@ int sc_caster_init(sc_caster_callback_t callback) {
 
   user_callback = callback;
 
-  // Set thread name.
+  // Kick off caster thread.
   k_tid_t tid =
       k_thread_create(&sc_caster_thread, sc_caster_stack_area,
                       K_THREAD_STACK_SIZEOF(sc_caster_stack_area),

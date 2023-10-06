@@ -9,9 +9,11 @@
 
 // All fields should be considered private.
 struct sc_motion_detector {
-  struct k_work_delayable timer;
+  struct k_work_delayable horiz_timer;
+  struct k_work_delayable inact_timer;
   struct sc_accel_entry prev_entry;
-  bool is_still;
+  bool is_horizontal;
+  bool is_inactive;
 };
 
 void sc_md_init(struct sc_motion_detector *md);
@@ -19,6 +21,8 @@ void sc_md_init(struct sc_motion_detector *md);
 void sc_md_ingest(struct sc_motion_detector *md,
                   const struct sc_accel_entry *entry);
 
-bool sc_md_is_still(const struct sc_motion_detector *md);
+bool sc_md_is_horizontal(const struct sc_motion_detector *md);
+
+bool sc_md_is_inactive(const struct sc_motion_detector *md);
 
 #endif  // _MOTION_DETECTOR_H_

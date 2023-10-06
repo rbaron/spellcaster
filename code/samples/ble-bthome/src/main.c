@@ -28,13 +28,17 @@ void caster_cb(uint8_t slot) {
 }
 
 static void broadcast_action(uint8_t slot) {
-  if (sc_ble_set_advertising_data(slot + 1)) {
-    LOG_ERR("Failed to set advertising data");
-    return;
+  // if (sc_ble_set_advertising_data(slot + 1)) {
+  //   LOG_ERR("Failed to set advertising data");
+  //   return;
+  // }
+  // sc_ble_start_advertising();
+  // k_msleep(CONFIG_SC_BLE_ADV_DURATION_MSEC);
+  // sc_ble_stop_advertising();
+  if (slot == 0) {
+    LOG_WRN("Got slot 0, putting into low power mode");
+    sc_accel_sleep();
   }
-  sc_ble_start_advertising();
-  k_msleep(CONFIG_SC_BLE_ADV_DURATION_MSEC);
-  sc_ble_stop_advertising();
 }
 
 int main(void) {

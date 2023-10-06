@@ -40,6 +40,14 @@
 #define LSM6DSL_FIFO_DATA_OUT_L 0x3e
 #define LSM6DSL_FIFO_DATA_OUT_H 0x3f
 
+#define LSM6DSL_INT1_CTRL 0x0d
+
+#define LSM6DSL_TAP_CFG 0x58
+#define LSM6DSL_WAKE_UP_THS 0x5b
+#define LSM6DSL_WAKE_UP_DUR 0x5c
+#define LSM6DSL_WAKE_UP_SRC 0x1b
+#define LSM6DSL_MD1_CFG 0x5e
+
 // Offsets.
 #define LSM6DSL_XA_OFFS_H
 #define LSM6DSL_YA_OFFS_H

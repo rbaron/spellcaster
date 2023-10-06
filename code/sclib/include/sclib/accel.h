@@ -19,7 +19,21 @@ struct sc_accel_entry {
   int16_t gz;
 };
 
+enum sc_accel_evt {
+  SC_ACCEL_WAKEUP_EVT,
+  SC_ACCEL_SLEEP_EVT,
+};
+
+// Callback for accel events.
+typedef void (*sc_accel_evt_handler_t)(enum sc_accel_evt evt);
+
 int sc_accel_init(void);
+
+// Put accel into low power mode.
+int sc_accel_sleep(void);
+
+// Sets the callback for accel events.
+int sc_accel_set_evt_handler(sc_accel_evt_handler_t handler);
 
 int sc_accel_read(struct sc_accel_entry *entry);
 

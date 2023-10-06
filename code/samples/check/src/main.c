@@ -1,4 +1,5 @@
 #include <sclib/accel.h>
+#include <sclib/led.h>
 #include <sclib/macros.h>
 #include <zephyr/kernel.h>
 #include <zephyr/logging/log.h>
@@ -7,6 +8,7 @@ LOG_MODULE_REGISTER(main, LOG_LEVEL_DBG);
 
 int main(void) {
   sc_accel_init();
+  sc_led_init();
   struct sc_accel_entry entry;
   while (true) {
     if (!sc_accel_read(&entry)) {

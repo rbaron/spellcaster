@@ -1,9 +1,11 @@
 #include "sclib/accel.h"
 
+#include <zephyr/drivers/gpio.h>
 #include <zephyr/drivers/i2c.h>
 #include <zephyr/kernel.h>
 #include <zephyr/logging/log.h>
 
+#include "sclib/led.h"
 #include "sclib/lsm6dsl_regs.h"
 #include "sclib/macros.h"
 #include "sclib/mpu6050_regs.h"
@@ -13,8 +15,8 @@
 
 #define PARSES16BE(buf, i) (((int16_t)buf[i + 1] << 8) | (int16_t)buf[i])
 
-LOG_MODULE_REGISTER(accel, CONFIG_SCLIB_LOG_LEVEL);
-// LOG_MODULE_REGISTER(accel, LOG_LEVEL_DBG);
+// LOG_MODULE_REGISTER(accel, CONFIG_SCLIB_LOG_LEVEL);
+LOG_MODULE_REGISTER(accel, LOG_LEVEL_DBG);
 
 #if DT_NODE_EXISTS(DT_NODELABEL(mpu))
 
@@ -85,14 +87,44 @@ int sc_accel_read(struct sc_accel_entry *entry) {
 
 #elif DT_NODE_EXISTS(DT_NODELABEL(lsm6dsl))
 
+static const struct gpio_dt_spec int_1_dt =
+    GPIO_DT_SPEC_GET(DT_NODELABEL(int_1), gpios);
+
+struct gpio_callback interrupt_cb_data;
+
 static const struct i2c_dt_spec mpu = I2C_DT_SPEC_GET(DT_NODELABEL(lsm6dsl));
 
-static int write_reg_16(uint8_t reg, int16_t val) {
-  uint8_t buf[3];
-  buf[0] = reg;
-  buf[1] = val >> 8;
-  buf[2] = val & 0xff;
-  return i2c_write_dt(&mpu, buf, sizeof(buf));
+// User supplied callback.
+static sc_accel_evt_handler_t user_callback = NULL;
+
+static void isr_work_handler(struct k_work *work) {
+  // Read wake up source.
+  uint8_t write_buf[1] = {LSM6DSL_WAKE_UP_SRC};
+  uint8_t read_buf[1];
+  RET_IF_ERR(i2c_write_read_dt(&mpu, write_buf, sizeof(write_buf), read_buf,
+                               sizeof(read_buf)));
+
+  LOG_DBG("WAKE_UP_SRC: 0x%02x", read_buf[0]);
+
+  if (!user_callback) {
+    return;
+  }
+
+  // Wakeup?
+  if (read_buf[0] & 0b1 << 3) {
+    user_callback(SC_ACCEL_WAKEUP_EVT);
+  }
+
+  // sc_led_toggle();
+}
+
+// Define work.
+K_WORK_DEFINE(isr_work, isr_work_handler);
+
+static void interrupt_callback(const struct device *dev,
+                               struct gpio_callback *cb, uint32_t pins) {
+  // Create work.
+  k_work_submit(&isr_work);
 }
 
 int sc_accel_init(void) {
@@ -123,6 +155,52 @@ int sc_accel_init(void) {
   // Enable accel and gyro in fifo.
   RET_IF_ERR(i2c_reg_write_byte_dt(&mpu, LSM6DSL_FIFO_CTRL3, (0b1 << 3) | 0b1));
 
+  // Set up interrupt on significant motion.
+  // Enable FUNC_EN and SIGN_MOTION_EN.
+  // RET_IF_ERR(i2c_reg_write_byte_dt(&mpu, LSM6DSL_CTRL10_C, 0b101));
+  // Enable significant motion interrupt on INT1.
+  // RET_IF_ERR(i2c_reg_write_byte_dt(&mpu, LSM6DSL_INT1_CTRL, 0x40));
+
+  // Set interrupt on wake up.
+  // Write 60h into CTRL1_XL.
+  // RET_IF_ERR(i2c_reg_write_byte_dt(&mpu, LSM6DSL_CTRL1_XL, 0x60));
+
+  // Init interrupt pins.
+  RET_IF_ERR(!device_is_ready(int_1_dt.port));
+  RET_IF_ERR(gpio_pin_configure_dt(&int_1_dt, GPIO_INPUT));
+  RET_IF_ERR(
+      gpio_pin_interrupt_configure_dt(&int_1_dt, GPIO_INT_EDGE_TO_ACTIVE));
+
+  // Initialize GPIO callback.
+  gpio_init_callback(&interrupt_cb_data, interrupt_callback, BIT(int_1_dt.pin));
+  RET_IF_ERR(gpio_add_callback(int_1_dt.port, &interrupt_cb_data));
+
+  LOG_DBG("LSM6DSL init done");
+
+  return 0;
+}
+
+int sc_accel_sleep(void) {
+  // Software reset.
+  // RET_IF_ERR(i2c_reg_write_byte_dt(&mpu, LSM6DSL_CTRL3_C, 0x01));
+  // k_msleep(100);
+
+  // Disable fifo.
+  RET_IF_ERR(i2c_reg_write_byte_dt(&mpu, LSM6DSL_FIFO_CTRL3, 0x00));
+
+  // INTERRUPTS_ENABLE & INACT_EN.
+  RET_IF_ERR(i2c_reg_write_byte_dt(&mpu, LSM6DSL_TAP_CFG, 0xe0));
+  // Set wake up duration to 1/ODR.
+  RET_IF_ERR(i2c_reg_write_byte_dt(&mpu, LSM6DSL_WAKE_UP_DUR, 0x01));
+  RET_IF_ERR(i2c_reg_write_byte_dt(&mpu, LSM6DSL_WAKE_UP_THS, 0x01));
+  // Enable wake up interrupt on INT1.
+  RET_IF_ERR(i2c_reg_write_byte_dt(&mpu, LSM6DSL_MD1_CFG, 0x80));
+
+  return 0;
+}
+
+int sc_accel_set_evt_handler(sc_accel_evt_handler_t handler) {
+  user_callback = handler;
   return 0;
 }
 
@@ -142,7 +220,6 @@ int sc_accel_read(struct sc_accel_entry *entry) {
 
   // Read fifo.
   if (fifo_count <= 0) {
-    LOG_DBG("FIFO empty");
     return -1;
   }
 

@@ -3,7 +3,8 @@
 #include <stdbool.h>
 #include <zephyr/logging/log.h>
 
-#define MD_TIMER_PERIOD_MS 500
+#define MD_HORIZ_TIMER_PERIOD_MS 500
+#define MD_INACTIVE_TIMER_PERIOD_MS (7 * 1000)
 
 // Full motion is 2g, in 16 bits, that's sort of +/- 32768.
 // #define MD_ACCEL_DIFF_THRESHOLD 1024
@@ -17,18 +18,29 @@ static uint16_t abs(int16_t x) {
   return x < 0 ? -x : x;
 }
 
-static void timer_callback(struct k_work *work) {
+static void horiz_timer_callback(struct k_work *work) {
   struct k_work_delayable *delayable =
       CONTAINER_OF(work, struct k_work_delayable, work);
   struct sc_motion_detector *md =
-      CONTAINER_OF(delayable, struct sc_motion_detector, timer);
-  LOG_DBG("Still");
-  md->is_still = true;
+      CONTAINER_OF(delayable, struct sc_motion_detector, horiz_timer);
+  LOG_DBG("Horizontal");
+  md->is_horizontal = true;
+}
+
+static void inact_timer_callback(struct k_work *work) {
+  struct k_work_delayable *delayable =
+      CONTAINER_OF(work, struct k_work_delayable, work);
+  struct sc_motion_detector *md =
+      CONTAINER_OF(delayable, struct sc_motion_detector, inact_timer);
+  LOG_DBG("Inactive");
+  md->is_inactive = true;
 }
 
 void sc_md_init(struct sc_motion_detector *md) {
-  k_work_init_delayable(&md->timer, timer_callback);
-  md->is_still = false;
+  k_work_init_delayable(&md->horiz_timer, horiz_timer_callback);
+  k_work_init_delayable(&md->inact_timer, inact_timer_callback);
+  md->is_horizontal = false;
+  md->is_inactive = false;
 }
 
 void sc_md_ingest(struct sc_motion_detector *md,
@@ -50,18 +62,28 @@ void sc_md_ingest(struct sc_motion_detector *md,
                       abs(diff.gy) < MD_ACCEL_DIFF_THRESHOLD &&
                       abs(diff.gz) < MD_ACCEL_DIFF_THRESHOLD;
 
+  if (!is_still_now) {
+    // Restart timer.
+    k_work_reschedule(&md->inact_timer, K_MSEC(MD_INACTIVE_TIMER_PERIOD_MS));
+    // Trigger state transition if we were still.
+    if (md->is_inactive) {
+      LOG_DBG("Active");
+      md->is_inactive = false;
+    }
+  }
+
   bool is_still_horiz_now =
       is_still_now && (abs(entry->ay) < MD_STILL_Y_ACCEL_THRESHOLD);
 
   // Reset the timer if we're not still horizontal.
   if (!is_still_horiz_now) {
     // Restart timer.
-    k_work_reschedule(&md->timer, K_MSEC(MD_TIMER_PERIOD_MS));
+    k_work_reschedule(&md->horiz_timer, K_MSEC(MD_HORIZ_TIMER_PERIOD_MS));
 
     // Trigger state transition if we were still.
-    if (md->is_still) {
-      LOG_DBG("Moving");
-      md->is_still = false;
+    if (md->is_horizontal) {
+      LOG_DBG("No longer horizontal");
+      md->is_horizontal = false;
     }
   }
 
@@ -69,7 +91,10 @@ void sc_md_ingest(struct sc_motion_detector *md,
   md->prev_entry = *entry;
 }
 
-bool sc_md_is_still(const struct sc_motion_detector *md) {
-  // LOG_DBG("sc_md_is_still: %d", md->is_still);
-  return md->is_still;
+bool sc_md_is_horizontal(const struct sc_motion_detector *md) {
+  return md->is_horizontal;
+}
+
+bool sc_md_is_inactive(const struct sc_motion_detector *md) {
+  return md->is_inactive;
 }

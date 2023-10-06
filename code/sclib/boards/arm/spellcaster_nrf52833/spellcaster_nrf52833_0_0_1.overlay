@@ -1,4 +1,20 @@
 
+/ {
+	interrupts {
+		compatible = "gpio-keys";
+		int_1: int_1 {
+			// P0.11.
+			gpios = <&gpio0 11 (GPIO_PULL_DOWN | GPIO_ACTIVE_HIGH)>;
+			label = "Accel interrupt 1";
+		};
+		int_2: int_2 {
+			// P0.9.
+			gpios = <&gpio0 9 (GPIO_PULL_DOWN | GPIO_ACTIVE_HIGH)>;
+			label = "Accel interrupt 2";
+		};
+	};
+};
+
 &i2c0 {
 	compatible = "nordic,nrf-twi";
 	status = "okay";
