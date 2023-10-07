@@ -25,6 +25,15 @@
 		};
 	};
 
+	// TODO: move to PWM.
+	vibration {
+		compatible = "gpio-leds";
+		vib0: vib0 {
+			// P0.09.
+			gpios = <&gpio0 9 GPIO_ACTIVE_HIGH>;
+		};
+	};
+
 	buttons {
 		compatible = "gpio-keys";
 		button_a: button_a {

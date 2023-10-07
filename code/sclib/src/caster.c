@@ -12,6 +12,7 @@
 #include "sclib/macros.h"
 #include "sclib/motion_detector.h"
 #include "sclib/signal_store.h"
+#include "sclib/vibration.h"
 
 #define SC_CASTER_DIST_THRESHOLD 5000
 
@@ -98,10 +99,10 @@ static int process_buffer() {
            fifo_buffer_len * sizeof(struct sc_accel_entry));
     signal.len = fifo_buffer_len;
     RET_IF_ERR(sc_ss_store(slot, &signal));
-    LOG_DBG("Stored signal.\n");
+    LOG_DBG("Stored signal -- switching to replay mode.\n");
     sc_led_flash(5);
-    k_msleep(1000);
-    return 0;
+    mode = MODE_REPLAY;
+    goto END;
   }
 
   LOG_DBG("Will compare the signal.");
@@ -122,6 +123,7 @@ static int process_buffer() {
     if (dist < SC_CASTER_DIST_THRESHOLD) {
       LOG_DBG("Matched slot %d", maybe_slot);
       sc_led_flash(maybe_slot + 1);
+      sc_vib_flash(maybe_slot + 1);
       if (user_callback != NULL) {
         user_callback(maybe_slot);
       }
@@ -131,6 +133,7 @@ static int process_buffer() {
     }
   }
   sc_led_flash(4);
+  sc_vib_flash(4);
 
 END:
   k_msleep(2000);
@@ -261,6 +264,7 @@ static void accel_evt_handler(enum sc_accel_evt evt) {
 int sc_caster_init(sc_caster_callback_t callback) {
   LOG_DBG("Initializing");
   RET_IF_ERR(sc_led_init());
+  RET_IF_ERR(sc_vib_init());
   RET_IF_ERR(sc_button_init());
   RET_IF_ERR(sc_accel_init());
   RET_IF_ERR(sc_ss_init());
@@ -268,6 +272,7 @@ int sc_caster_init(sc_caster_callback_t callback) {
   sc_accel_set_evt_handler(accel_evt_handler);
 
   sc_led_flash(1);
+  sc_vib_flash(1);
 
   sc_md_init(&md);
 
