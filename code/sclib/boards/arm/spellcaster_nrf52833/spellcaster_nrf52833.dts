@@ -25,12 +25,10 @@
 		};
 	};
 
-	// TODO: move to PWM.
-	vibration {
-		compatible = "gpio-leds";
-		vib0: vib0 {
-			// P0.09.
-			gpios = <&gpio0 9 GPIO_ACTIVE_HIGH>;
+	pwms {
+		compatible = "pwm-leds";
+		pwm_vib: pwm_vib {
+			pwms = <&pwm0 0 PWM_MSEC(20) PWM_POLARITY_NORMAL>;
 		};
 	};
 
@@ -77,6 +75,7 @@
 	pinctrl-0 = <&pwm0_default>;
 	pinctrl-1 = <&pwm0_sleep>;
 	pinctrl-names = "default", "sleep";
+	// status = "disabled";
 };
 
 &adc {

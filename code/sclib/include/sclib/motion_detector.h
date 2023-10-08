@@ -7,6 +7,8 @@
 
 #include "sclib/accel.h"
 
+#define SC_MD_HORIZ_TIMER_PERIOD_MS 500
+
 // All fields should be considered private.
 struct sc_motion_detector {
   struct k_work_delayable horiz_timer;

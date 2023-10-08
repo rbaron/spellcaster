@@ -8,7 +8,7 @@
 
 #include <stdint.h>
 
-#define SC_ACCEL_SAMPLE_RATE_HZ 50
+#define SC_ACCEL_SAMPLE_RATE_HZ 52
 
 struct sc_accel_entry {
   int16_t ax;

@@ -117,13 +117,16 @@ static int process_buffer() {
     // Compare the signal.
     LOG_DBG("Comparing signal. Stored len: %d, query len: %d.\n", signal.len,
             fifo_buffer_len);
+
     size_t dist = dtw(signal.entries, signal.len, fifo_buffer, fifo_buffer_len);
     LOG_DBG("Distance: %d\n", dist);
 
     if (dist < SC_CASTER_DIST_THRESHOLD) {
       LOG_DBG("Matched slot %d", maybe_slot);
-      sc_led_flash(maybe_slot + 1);
-      sc_vib_flash(maybe_slot + 1);
+      // sc_led_flash(maybe_slot + 1);
+      // sc_vib_flash(maybe_slot + 1);
+      sc_vib_yes();
+      // sc_vib_yes();
       if (user_callback != NULL) {
         user_callback(maybe_slot);
       }
@@ -132,8 +135,8 @@ static int process_buffer() {
       LOG_DBG("Not matched!");
     }
   }
-  sc_led_flash(4);
-  sc_vib_flash(4);
+  sc_led_flash(1);
+  sc_vib_no();
 
 END:
   k_msleep(2000);
@@ -221,7 +224,16 @@ static void sc_caster_thread_fn(void *, void *, void *) {
       } else if (!sc_md_is_horizontal(&md)) {
         fifo_buffer[fifo_buffer_len++] = entry;
       } else {
-        LOG_DBG("Stopped capturing. Confirm?");
+        // Remove 500 ms of data.
+        int n_remove =
+            (SC_MD_HORIZ_TIMER_PERIOD_MS * SC_ACCEL_SAMPLE_RATE_HZ) / 1000;
+        // fifo_buffer_len -= 500 / SC_ACCEL_SAMPLE_PERIOD_MS;
+        LOG_DBG(
+            "Stopped capturing. Got a total of %d samples ~ %.2f s. Removing "
+            "%d (~ %.2f s).",
+            fifo_buffer_len, (float)fifo_buffer_len / SC_ACCEL_SAMPLE_RATE_HZ,
+            n_remove, (float)n_remove / SC_ACCEL_SAMPLE_RATE_HZ);
+        fifo_buffer_len -= n_remove;
         state = STATE_CONFIRMING;
       }
     } else if (state == STATE_CONFIRMING) {
@@ -235,7 +247,8 @@ static void sc_caster_thread_fn(void *, void *, void *) {
       if (sc_md_is_horizontal(&md)) {
         LOG_DBG("Will get ready");
         state = STATE_READY;
-        sc_led_flash(1);
+        // sc_led_flash(1);
+        sc_vib_ready();
       }
     }
   }

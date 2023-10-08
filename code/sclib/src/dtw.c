@@ -3,8 +3,12 @@
 #include <math.h>
 #include <string.h>
 
-// 3s of data at 50 Hz minus 500ms removed from stillness detection.
-#define IMU_ENTRIES_MAX 125
+#include "sclib/accel.h"
+#include "sclib/motion_detector.h"
+
+// 3s of data at 52 Hz minus 500ms removed from stillness detection.
+#define IMU_ENTRIES_MAX \
+  (SC_ACCEL_SAMPLE_RATE_HZ * (3000 - SC_MD_HORIZ_TIMER_PERIOD_MS) / 1000)
 
 #define IDX(alen, blen, r, c) ((r) * (blen) + (c))
 

@@ -3,8 +3,7 @@
 #include <stdbool.h>
 #include <zephyr/logging/log.h>
 
-#define MD_HORIZ_TIMER_PERIOD_MS 500
-#define MD_INACTIVE_TIMER_PERIOD_MS (7 * 1000)
+#define MD_INACTIVE_TIMER_PERIOD_MS (30 * 1000)
 
 // Full motion is 2g, in 16 bits, that's sort of +/- 32768.
 // #define MD_ACCEL_DIFF_THRESHOLD 1024
@@ -78,7 +77,7 @@ void sc_md_ingest(struct sc_motion_detector *md,
   // Reset the timer if we're not still horizontal.
   if (!is_still_horiz_now) {
     // Restart timer.
-    k_work_reschedule(&md->horiz_timer, K_MSEC(MD_HORIZ_TIMER_PERIOD_MS));
+    k_work_reschedule(&md->horiz_timer, K_MSEC(SC_MD_HORIZ_TIMER_PERIOD_MS));
 
     // Trigger state transition if we were still.
     if (md->is_horizontal) {
