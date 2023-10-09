@@ -1,0 +1,20 @@
+{
+	"folders": [
+		{
+			"path": "."
+		},
+		{
+			"path": "../../sclib"
+		}
+	],
+	"settings": {
+		"C_Cpp.autoAddFileAssociations": false,
+		"nrf-connect.applications": [
+			"${workspaceFolder}"
+		],
+		"[python]": {
+			"editor.defaultFormatter": "ms-python.black-formatter"
+		},
+		"python.formatting.provider": "none"
+	}
+}

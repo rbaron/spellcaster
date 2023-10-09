@@ -6,12 +6,11 @@
 #define MD_INACTIVE_TIMER_PERIOD_MS (30 * 1000)
 
 // Full motion is 2g, in 16 bits, that's sort of +/- 32768.
-// #define MD_ACCEL_DIFF_THRESHOLD 1024
-#define MD_ACCEL_DIFF_THRESHOLD 2048
-#define MD_STILL_Y_ACCEL_THRESHOLD 2048
+#define MD_ACCEL_DIFF_THRESHOLD (4 * 1024)
+#define MD_STILL_Y_ACCEL_THRESHOLD (4 * 1024)
 
-// LOG_MODULE_REGISTER(motion_detector, CONFIG_SCLIB_LOG_LEVEL);
-LOG_MODULE_REGISTER(motion_detector, LOG_LEVEL_DBG);
+LOG_MODULE_REGISTER(motion_detector, CONFIG_SCLIB_LOG_LEVEL);
+// LOG_MODULE_REGISTER(motion_detector, LOG_LEVEL_DBG);
 
 static uint16_t abs(int16_t x) {
   return x < 0 ? -x : x;
@@ -71,8 +70,9 @@ void sc_md_ingest(struct sc_motion_detector *md,
     }
   }
 
-  bool is_still_horiz_now =
-      is_still_now && (abs(entry->ay) < MD_STILL_Y_ACCEL_THRESHOLD);
+  bool is_horiz_now = abs(entry->ay) < MD_ACCEL_DIFF_THRESHOLD;
+
+  bool is_still_horiz_now = is_still_now && is_horiz_now;
 
   // Reset the timer if we're not still horizontal.
   if (!is_still_horiz_now) {
@@ -81,9 +81,19 @@ void sc_md_ingest(struct sc_motion_detector *md,
 
     // Trigger state transition if we were still.
     if (md->is_horizontal) {
-      LOG_DBG("No longer horizontal");
+      LOG_DBG("No longer horizontal: still: %d, horiz: %d", is_still_now,
+              is_horiz_now);
+      // Logs all diffs.
+      LOG_DBG("Diff: %d, %d, %d, %d, %d, %d", diff.ax, diff.ay, diff.az,
+              diff.gx, diff.gy, diff.gz);
+      // Logs all entries.
+      LOG_DBG("Entry: %d, %d, %d, %d, %d, %d", entry->ax, entry->ay, entry->az,
+              entry->gx, entry->gy, entry->gz);
       md->is_horizontal = false;
     }
+    // } else {
+    //   LOG_DBG("Still horizontal: still: %d, horiz: %d", is_still_now,
+    //           is_horiz_now);
   }
 
   // Save the current entry.

@@ -104,7 +104,7 @@ static void isr_work_handler(struct k_work *work) {
   RET_IF_ERR(i2c_write_read_dt(&mpu, write_buf, sizeof(write_buf), read_buf,
                                sizeof(read_buf)));
 
-  LOG_DBG("WAKE_UP_SRC: 0x%02x", read_buf[0]);
+  // LOG_DBG("WAKE_UP_SRC: 0x%02x", read_buf[0]);
 
   if (!user_callback) {
     return;

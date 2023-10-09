@@ -16,6 +16,10 @@
 
 #define SC_CASTER_DIST_THRESHOLD 5000
 
+// Signals less than 500 ms (after discarding SC_MD_HORIZ_TIMER_PERIOD_MS), are
+// discarded.
+#define SC_CASTER_MIN_SIGNAL_MS 500
+
 // Thread.
 #define SC_CASTER_THREAD_STACK_SIZE (8 * 1024)
 #define SC_CASTER_THREAD_PRIORITY 5
@@ -93,6 +97,13 @@ static int process_buffer() {
   // __ASSERT_NO_MSG(!sc_accel_reset_fifo());
   // return 0;
 
+  // If less than half a second of data, discard.
+  if (fifo_buffer_len <
+      (SC_CASTER_MIN_SIGNAL_MS * SC_ACCEL_SAMPLE_RATE_HZ) / 1000) {
+    LOG_DBG("Buffer too short. Discarding.");
+    goto END;
+  }
+
   if (mode == MODE_RECORD) {
     LOG_DBG("Will store the signal on slot %d.", slot);
     memcpy(signal.entries, fifo_buffer,
@@ -115,6 +126,7 @@ static int process_buffer() {
     }
 
     // Compare the signal.
+    // TODO: Bug. Sometimes query_len < 0 here.
     LOG_DBG("Comparing signal. Stored len: %d, query len: %d.\n", signal.len,
             fifo_buffer_len);
 
@@ -160,7 +172,9 @@ static void change_mode(enum Mode *mode, enum State *state,
   *state = STATE_WAITING;
   sc_led_flash(slot + 1);
   fifo_buffer_len = 0;
-  k_msleep(1000);
+
+  // Watch out so we don't trigger the motion detector.
+  // k_msleep(1000);
 }
 
 static void sc_caster_thread_fn(void *, void *, void *) {
