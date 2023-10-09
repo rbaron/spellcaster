@@ -91,7 +91,7 @@ async def main(args: argparse.Namespace):
             args.device_name, cb=dict(use_bdaddr=args.macos_use_bdaddr)
         )
         if device is None:
-            logger.error("could not find device with name '%s'", args.name)
+            logger.error("could not find device with name '%s'", args.device_name)
             return
 
     logger.info("connecting to device...")

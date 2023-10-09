@@ -4,11 +4,7 @@
 #include <string.h>
 
 #include "sclib/accel.h"
-#include "sclib/motion_detector.h"
-
-// 3s of data at 52 Hz minus 500ms removed from stillness detection.
-#define IMU_ENTRIES_MAX \
-  (SC_ACCEL_SAMPLE_RATE_HZ * (3000 - SC_MD_HORIZ_TIMER_PERIOD_MS) / 1000)
+#include "sclib/signal_store.h"
 
 #define IDX(alen, blen, r, c) ((r) * (blen) + (c))
 
@@ -26,7 +22,7 @@ size_t dtw(const struct sc_accel_entry *a, size_t a_len,
   // This eats up RAM FAST.
   // TODO: consider FastDTW: https://cs.fit.edu/~pkc/papers/tdm04.pdf,
   // which runs in O(n) space and time (!!).
-  static size_t DTW[IMU_ENTRIES_MAX * IMU_ENTRIES_MAX];
+  static size_t DTW[SC_SIGNAL_STORE_MAX_SAMPLES * SC_SIGNAL_STORE_MAX_SAMPLES];
 
   // Ideally set to infinity, but that's too large.
   memset(DTW, 0xff, sizeof(DTW));

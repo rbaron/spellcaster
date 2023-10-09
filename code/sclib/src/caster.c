@@ -58,6 +58,9 @@ static struct k_thread sc_caster_thread;
 // User callback.
 static sc_caster_callback_t user_callback = NULL;
 
+// Signal callback.
+static sc_caster_signal_callback_t user_signal_callback = NULL;
+
 // Message queue for piping button events to the caster thread.
 struct button_event_queue_el {
   sc_button_t button;
@@ -102,6 +105,10 @@ static int process_buffer() {
       (SC_CASTER_MIN_SIGNAL_MS * SC_ACCEL_SAMPLE_RATE_HZ) / 1000) {
     LOG_DBG("Buffer too short. Discarding.");
     goto END;
+  }
+
+  if (user_signal_callback != NULL) {
+    user_signal_callback(fifo_buffer, fifo_buffer_len);
   }
 
   if (mode == MODE_RECORD) {
@@ -315,5 +322,10 @@ int sc_caster_init(sc_caster_callback_t callback) {
                       /*p3=*/NULL, SC_CASTER_THREAD_PRIORITY, /*options=*/0,
                       /*delay=*/K_NO_WAIT);
   k_thread_name_set(tid, "sc_caster_thread");
+  return 0;
+}
+
+int sc_caster_set_signal_callback(sc_caster_signal_callback_t callback) {
+  user_signal_callback = callback;
   return 0;
 }
