@@ -22,5 +22,13 @@ int sc_flash_fs_init() {
   // works, but avoiding a scary red message would be ideal. Maybe somehow check
   // if it's formatted before mounting?
   RET_IF_ERR(fs_mount(&lfs_storage_mnt));
+
+  // Print free space.
+  struct fs_statvfs stat;
+  RET_IF_ERR(fs_statvfs(SC_FLASH_FS_MOUNT_POINT, &stat));
+  // Total space.
+  LOG_INF("Flash FS size: %lu bytes", stat.f_frsize * stat.f_blocks);
+  // Free space.
+  LOG_INF("Flash FS free: %lu bytes", stat.f_frsize * stat.f_bfree);
   return 0;
 }

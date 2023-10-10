@@ -106,11 +106,12 @@
 	};
 };
 
+/*
+ * For more information, see:
+ * http: //docs.zephyrproject.org/latest/guides/dts/index.html#flash-partitions
+ */
+/* Default
 &flash0 {
-	/*
-	 * For more information, see:
-	 * http: //docs.zephyrproject.org/latest/guides/dts/index.html#flash-partitions
-	 */
 	partitions {
 		compatible = "fixed-partitions";
 		#address-cells = <1>;
@@ -134,7 +135,43 @@
 		};
 		storage_partition: partition@7a000 {
 			label = "storage";
+			// 24k bytes only?
 			reg = <0x0007A000 0x00006000>;
+		};
+	};
+};
+ */
+
+&flash0 {
+	/*
+	 * For more information, see:
+	 * http: //docs.zephyrproject.org/latest/guides/dts/index.html#flash-partitions
+	 */
+	partitions {
+		compatible = "fixed-partitions";
+		#address-cells = <1>;
+		#size-cells = <1>;
+
+		boot_partition: partition@0 {
+			label = "mcuboot";
+			reg = <0x000000000 0xC000>;
+		};
+		slot0_partition: partition@c000 {
+			label = "image-0";
+			reg = <0x0000C000 0x32000>;
+		};
+		// We don't need no stinkin' slot 1.
+		// slot1_partition: partition@3e000 {
+			//   label = "image-1";
+			//   reg = <0x0003E000 0x32000>;
+		// };
+		// scratch_partition: partition@70000 {
+			//   label = "image-scratch";
+			//   reg = <0x00070000 0xA000>;
+		// };
+		storage_partition: partition@3e000 {
+			label = "storage";
+			reg = <0x0003E000 0x42000>;
 		};
 	};
 };

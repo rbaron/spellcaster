@@ -82,6 +82,10 @@ int sc_ss_store(uint8_t slot, const struct sc_signal *signal) {
 
   LOG_DBG("Writing to %s", filename);
 
+  // Try to delete first --
+  // https://github.com/zephyrproject-rtos/zephyr/issues/60890.
+  fs_unlink(filename);
+
   struct fs_file_t file;
   fs_file_t_init(&file);
   RET_IF_ERR(fs_open(&file, filename, FS_O_CREATE | FS_O_RDWR));

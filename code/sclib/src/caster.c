@@ -61,6 +61,9 @@ static sc_caster_callback_t user_callback = NULL;
 // Signal callback.
 static sc_caster_signal_callback_t user_signal_callback = NULL;
 
+// static bool should_sleep = false;
+// static bool sleeping = false;
+
 // Message queue for piping button events to the caster thread.
 struct button_event_queue_el {
   sc_button_t button;
@@ -182,7 +185,8 @@ static void change_mode(enum Mode *mode, enum State *state,
                         enum Mode new_mode) {
   *mode = new_mode;
   *state = STATE_WAITING;
-  sc_led_flash(slot + 1);
+  // sc_led_flash(slot + 1);
+  sc_led_flash(1);
   fifo_buffer_len = 0;
 
   // Watch out so we don't trigger the motion detector.
@@ -215,6 +219,16 @@ static void sc_caster_thread_fn(void *, void *, void *) {
       slot = 2;
       change_mode(&mode, &state, MODE_RECORD);
     } else if (msg.button == SC_BUTTON_A &&
+               msg.event == SC_BUTTON_EVENT_QUADRUPLE_PRESS) {
+      LOG_DBG("Switching to capture mode (slot 3)");
+      slot = 3;
+      change_mode(&mode, &state, MODE_RECORD);
+    } else if (msg.button == SC_BUTTON_A &&
+               msg.event == SC_BUTTON_EVENT_QUINTUPLE_PRESS) {
+      LOG_DBG("Switching to capture mode (slot 4)");
+      slot = 4;
+      change_mode(&mode, &state, MODE_RECORD);
+    } else if (msg.button == SC_BUTTON_A &&
                msg.event == SC_BUTTON_EVENT_LONG_PRESS) {
       LOG_DBG("Switching to replay mode");
       change_mode(&mode, &state, MODE_REPLAY);
@@ -228,12 +242,19 @@ static void sc_caster_thread_fn(void *, void *, void *) {
 
     sc_md_ingest(&md, &entry);
 
-    if (sc_md_is_inactive(&md)) {
-      LOG_DBG("Still -- going to sleep.");
-      // End thread. A new one will be created when we wake up.
-      sc_accel_sleep();
-      return;
-    }
+    // if (sc_md_is_inactive(&md)) {
+    //   LOG_DBG("Still -- going to sleep.");
+    //   // End thread. A new one will be created when we wake up.
+    //   sc_accel_sleep();
+    //   return;
+    // }
+    // if (should_sleep) {
+    //   LOG_DBG("Going to sleep.");
+    //   // End thread. A new one will be created when we wake up.
+    //   sc_accel_sleep();
+    //   sleeping = true;
+    //   return;
+    // }
 
     // We are not capturing.
     if (state == STATE_READY) {
@@ -284,19 +305,24 @@ static void sc_caster_thread_fn(void *, void *, void *) {
 static void accel_evt_handler(enum sc_accel_evt evt) {
   if (evt == SC_ACCEL_WAKEUP_EVT) {
     LOG_DBG("Accel event: wakeup -- will start caster thread.");
-    __ASSERT_NO_MSG(!sc_accel_init());
-    sc_led_flash(1);
-    sc_md_init(&md);
-    // Kick off caster thread.
-    k_tid_t tid =
-        k_thread_create(&sc_caster_thread, sc_caster_stack_area,
-                        K_THREAD_STACK_SIZEOF(sc_caster_stack_area),
-                        sc_caster_thread_fn, /*p1=*/NULL, /*p2=*/NULL,
-                        /*p3=*/NULL, SC_CASTER_THREAD_PRIORITY, /*options=*/0,
-                        /*delay=*/K_NO_WAIT);
-    k_thread_name_set(tid, "sc_caster_thread");
-  } else if (evt == SC_ACCEL_SLEEP_EVT) {
-    LOG_DBG("Accel event: sleep");
+    // __ASSERT_NO_MSG(!sc_accel_init());
+    // sc_led_flash(1);
+    // sc_md_init(&md);
+    // fifo_buffer_len = 0;
+    // // sleeping = false;
+    // // should_sleep = false;
+    // // Kick off caster thread.
+    // k_tid_t tid = k_thread_create(&sc_caster_thread, sc_caster_stack_area,
+    //                               K_THREAD_STACK_SIZEOF(sc_caster_stack_area),
+    //                               sc_caster_thread_fn, /*p1=*/NULL,
+    //                               /*p2=*/NULL,
+    //                               /*p3=*/NULL, SC_CASTER_THREAD_PRIORITY,
+    //                               /*options=*/0,
+    //                               /*delay=*/K_NO_WAIT);
+    // k_thread_name_set(tid, "sc_caster_thread");
+    // // } else if (evt == SC_ACCEL_SLEEP_EVT) {
+    // //   LOG_DBG("Accel event: should sleep");
+    // //   should_sleep = true;
   }
 }
 
