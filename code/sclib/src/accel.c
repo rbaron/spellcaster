@@ -140,11 +140,11 @@ int sc_accel_init(void) {
   // RET_IF_ERR(i2c_reg_write_byte_dt(&mpu, LSM6DSL_FIFO_CTRL5, 0x00));
   // RET_IF_ERR(i2c_reg_write_byte_dt(&mpu, LSM6DSL_FIFO_CTRL5, 0x01));
 
-  // Set accel to 52 Hz.
-  RET_IF_ERR(i2c_reg_write_byte_dt(&mpu, LSM6DSL_CTRL1_XL, 0x30));
+  // Set accel to 52 Hz and 4g.
+  RET_IF_ERR(i2c_reg_write_byte_dt(&mpu, LSM6DSL_CTRL1_XL, 0x30 | 0b1000));
 
-  // Set gyro to 52 Hz.
-  RET_IF_ERR(i2c_reg_write_byte_dt(&mpu, LSM6DSL_CTRL2_G, 0x30));
+  // Set gyro to 52 Hz and 500 dps.
+  RET_IF_ERR(i2c_reg_write_byte_dt(&mpu, LSM6DSL_CTRL2_G, 0x30 | 0b1000));
 
   // Set FIFO to 52 Hz & FIFO mode.
   // RET_IF_ERR(

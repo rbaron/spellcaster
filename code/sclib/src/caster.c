@@ -14,7 +14,7 @@
 #include "sclib/signal_store.h"
 #include "sclib/vibration.h"
 
-#define SC_CASTER_DIST_THRESHOLD 5000
+#define SC_CASTER_DIST_THRESHOLD 6000
 
 // Signals less than 500 ms (after discarding SC_MD_HORIZ_TIMER_PERIOD_MS), are
 // discarded.
@@ -125,6 +125,8 @@ static int process_buffer() {
 
   LOG_DBG("Will compare the signal.");
 
+  size_t min_dist = SIZE_MAX;
+  uint8_t min_slot;
   for (uint8_t maybe_slot = 0; maybe_slot < SC_SIGNAL_STORE_MAX_SIGNALS;
        maybe_slot++) {
     if (sc_ss_load(/*slot=*/maybe_slot, &signal)) {
@@ -140,22 +142,25 @@ static int process_buffer() {
     size_t dist = dtw(signal.entries, signal.len, fifo_buffer, fifo_buffer_len);
     LOG_DBG("Distance: %d\n", dist);
 
-    if (dist < SC_CASTER_DIST_THRESHOLD) {
-      LOG_DBG("Matched slot %d", maybe_slot);
-      // sc_led_flash(maybe_slot + 1);
-      // sc_vib_flash(maybe_slot + 1);
-      sc_vib_yes();
-      // sc_vib_yes();
-      if (user_callback != NULL) {
-        user_callback(maybe_slot);
-      }
-      goto END;
-    } else {
-      LOG_DBG("Not matched!");
+    if (dist < min_dist) {
+      min_dist = dist;
+      min_slot = maybe_slot;
     }
   }
-  sc_led_flash(1);
-  sc_vib_no();
+
+  if (min_dist < SC_CASTER_DIST_THRESHOLD) {
+    LOG_DBG("Matched slot %d", min_slot);
+    sc_vib_yes();
+    if (user_callback != NULL) {
+      user_callback(min_slot);
+    }
+    goto END;
+  } else {
+    LOG_DBG("Not matched!");
+    sc_led_flash(1);
+    sc_vib_no();
+    goto END;
+  }
 
 END:
   k_msleep(2000);

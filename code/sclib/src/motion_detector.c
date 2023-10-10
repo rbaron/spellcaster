@@ -5,8 +5,10 @@
 
 #define MD_INACTIVE_TIMER_PERIOD_MS (30 * 1000)
 
-// Full motion is 2g, in 16 bits, that's sort of +/- 32768.
-#define MD_ACCEL_DIFF_THRESHOLD (4 * 1024)
+// Full motion is 4g, in 16 bits
+// #define MD_ACCEL_DIFF_THRESHOLD (4 * 1024)
+// #define MD_STILL_Y_ACCEL_THRESHOLD (4 * 1024)
+#define MD_ACCEL_DIFF_THRESHOLD (3 * 1024)
 #define MD_STILL_Y_ACCEL_THRESHOLD (4 * 1024)
 
 LOG_MODULE_REGISTER(motion_detector, CONFIG_SCLIB_LOG_LEVEL);
