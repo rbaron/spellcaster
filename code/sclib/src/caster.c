@@ -61,8 +61,8 @@ static sc_caster_callback_t user_callback = NULL;
 // Signal callback.
 static sc_caster_signal_callback_t user_signal_callback = NULL;
 
-// static bool should_sleep = false;
-// static bool sleeping = false;
+static bool should_sleep = false;
+static bool sleeping = false;
 
 // Message queue for piping button events to the caster thread.
 struct button_event_queue_el {
@@ -194,10 +194,20 @@ static void change_mode(enum Mode *mode, enum State *state,
 }
 
 static void sc_caster_thread_fn(void *, void *, void *) {
+  LOG_DBG("Starting caster thread");
+
   struct button_event_queue_el msg;
   struct sc_accel_entry entry;
 
   while (true) {
+    if (should_sleep) {
+      LOG_DBG("Going to sleep.");
+      // End thread. A new one will be created when we wake up.
+      // sc_accel_sleep();
+      sleeping = true;
+      return;
+    }
+
     // Get button event from queue.
     if (k_msgq_get(&button_event_msgq, &msg, K_NO_WAIT)) {
       msg.button = SC_BUTTON_NONE;
@@ -236,7 +246,7 @@ static void sc_caster_thread_fn(void *, void *, void *) {
 
     // FIFO is not ready (hopefully).
     if (sc_accel_read(&entry)) {
-      k_msleep(10);
+      // k_msleep(10);
       continue;
     }
 
@@ -248,14 +258,6 @@ static void sc_caster_thread_fn(void *, void *, void *) {
     //   sc_accel_sleep();
     //   return;
     // }
-    // if (should_sleep) {
-    //   LOG_DBG("Going to sleep.");
-    //   // End thread. A new one will be created when we wake up.
-    //   sc_accel_sleep();
-    //   sleeping = true;
-    //   return;
-    // }
-
     // We are not capturing.
     if (state == STATE_READY) {
       if (!sc_md_is_horizontal(&md)) {
@@ -306,23 +308,37 @@ static void accel_evt_handler(enum sc_accel_evt evt) {
   if (evt == SC_ACCEL_WAKEUP_EVT) {
     LOG_DBG("Accel event: wakeup -- will start caster thread.");
     // __ASSERT_NO_MSG(!sc_accel_init());
+
+    // Blocks here sometimes I think (LED stays on). Why? This should not be an
+    // ISR...
     // sc_led_flash(1);
-    // sc_md_init(&md);
-    // fifo_buffer_len = 0;
-    // // sleeping = false;
-    // // should_sleep = false;
-    // // Kick off caster thread.
-    // k_tid_t tid = k_thread_create(&sc_caster_thread, sc_caster_stack_area,
-    //                               K_THREAD_STACK_SIZEOF(sc_caster_stack_area),
-    //                               sc_caster_thread_fn, /*p1=*/NULL,
-    //                               /*p2=*/NULL,
-    //                               /*p3=*/NULL, SC_CASTER_THREAD_PRIORITY,
-    //                               /*options=*/0,
-    //                               /*delay=*/K_NO_WAIT);
-    // k_thread_name_set(tid, "sc_caster_thread");
-    // // } else if (evt == SC_ACCEL_SLEEP_EVT) {
-    // //   LOG_DBG("Accel event: should sleep");
-    // //   should_sleep = true;
+
+    sc_md_init(&md);
+    fifo_buffer_len = 0;
+    state = STATE_WAITING;
+
+    __ASSERT(sleeping, "Should be sleeping!");
+
+    // Clear fifo.
+    __ASSERT_NO_MSG(!sc_accel_reset_fifo());
+    sleeping = false;
+    should_sleep = false;
+    // Kick off caster thread.
+    k_tid_t tid = k_thread_create(&sc_caster_thread, sc_caster_stack_area,
+                                  K_THREAD_STACK_SIZEOF(sc_caster_stack_area),
+                                  sc_caster_thread_fn, /*p1=*/NULL,
+                                  /*p2=*/NULL,
+                                  /*p3=*/NULL, SC_CASTER_THREAD_PRIORITY,
+                                  /*options=*/0,
+                                  /*delay=*/K_NO_WAIT);
+    k_thread_name_set(tid, "sc_caster_thread");
+
+    // Maybe restart watchdog here?
+  } else if (evt == SC_ACCEL_SLEEP_EVT) {
+    LOG_DBG("Accel event: should sleep");
+    should_sleep = true;
+
+    // Maybe stop watchdog here?
   }
 }
 

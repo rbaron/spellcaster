@@ -104,18 +104,17 @@ static void isr_work_handler(struct k_work *work) {
   RET_IF_ERR(i2c_write_read_dt(&mpu, write_buf, sizeof(write_buf), read_buf,
                                sizeof(read_buf)));
 
-  // LOG_DBG("WAKE_UP_SRC: 0x%02x", read_buf[0]);
+  LOG_DBG("WAKE_UP_SRC: 0x%02x", read_buf[0]);
 
   if (!user_callback) {
     return;
   }
 
-  // Wakeup?
-  if (read_buf[0] & 0b1 << 3) {
+  if (read_buf[0] & (0b1 << 4)) {
+    user_callback(SC_ACCEL_SLEEP_EVT);
+  } else if (read_buf[0] & 0x0f) {
     user_callback(SC_ACCEL_WAKEUP_EVT);
   }
-
-  // sc_led_toggle();
 }
 
 // Define work.
@@ -155,15 +154,18 @@ int sc_accel_init(void) {
   // Enable accel and gyro in fifo.
   RET_IF_ERR(i2c_reg_write_byte_dt(&mpu, LSM6DSL_FIFO_CTRL3, (0b1 << 3) | 0b1));
 
-  // Set up interrupt on significant motion.
-  // Enable FUNC_EN and SIGN_MOTION_EN.
-  // RET_IF_ERR(i2c_reg_write_byte_dt(&mpu, LSM6DSL_CTRL10_C, 0b101));
-  // Enable significant motion interrupt on INT1.
-  // RET_IF_ERR(i2c_reg_write_byte_dt(&mpu, LSM6DSL_INT1_CTRL, 0x40));
+  // Enable activity interrupts.
+  // INTERRUPTS_ENABLE & INACT_EN.
+  RET_IF_ERR(i2c_reg_write_byte_dt(&mpu, LSM6DSL_TAP_CFG, 0xe0));
+  // Set duration to wake up to 3 * ODR_timer (~ 60 ms) and duration to go to
+  // sleep to 512/ODR (~10 s).
+  RET_IF_ERR(
+      i2c_reg_write_byte_dt(&mpu, LSM6DSL_WAKE_UP_DUR, (0b11 << 5) | 0x01));
+  RET_IF_ERR(i2c_reg_write_byte_dt(&mpu, LSM6DSL_WAKE_UP_THS, 0x01));
+  // Set duration to go to sleep as 512/ODR ~= 10 seconds.
 
-  // Set interrupt on wake up.
-  // Write 60h into CTRL1_XL.
-  // RET_IF_ERR(i2c_reg_write_byte_dt(&mpu, LSM6DSL_CTRL1_XL, 0x60));
+  // Enable wake up interrupt on INT1.
+  RET_IF_ERR(i2c_reg_write_byte_dt(&mpu, LSM6DSL_MD1_CFG, 0x80));
 
   // Init interrupt pins.
   RET_IF_ERR(!device_is_ready(int_1_dt.port));
@@ -186,15 +188,7 @@ int sc_accel_sleep(void) {
   // k_msleep(100);
 
   // Disable fifo.
-  RET_IF_ERR(i2c_reg_write_byte_dt(&mpu, LSM6DSL_FIFO_CTRL3, 0x00));
-
-  // INTERRUPTS_ENABLE & INACT_EN.
-  RET_IF_ERR(i2c_reg_write_byte_dt(&mpu, LSM6DSL_TAP_CFG, 0xe0));
-  // Set wake up duration to 1/ODR.
-  RET_IF_ERR(i2c_reg_write_byte_dt(&mpu, LSM6DSL_WAKE_UP_DUR, 0x01));
-  RET_IF_ERR(i2c_reg_write_byte_dt(&mpu, LSM6DSL_WAKE_UP_THS, 0x01));
-  // Enable wake up interrupt on INT1.
-  RET_IF_ERR(i2c_reg_write_byte_dt(&mpu, LSM6DSL_MD1_CFG, 0x80));
+  // RET_IF_ERR(i2c_reg_write_byte_dt(&mpu, LSM6DSL_FIFO_CTRL3, 0x00));
 
   return 0;
 }
