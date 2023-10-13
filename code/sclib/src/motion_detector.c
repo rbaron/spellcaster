@@ -1,5 +1,6 @@
 #include "sclib/motion_detector.h"
 
+#include <math.h>
 #include <stdbool.h>
 #include <zephyr/logging/log.h>
 
@@ -25,6 +26,7 @@ static void horiz_timer_callback(struct k_work *work) {
       CONTAINER_OF(delayable, struct sc_motion_detector, horiz_timer);
   LOG_DBG("Horizontal");
   md->is_horizontal = true;
+  md->initial_row_angle = atan2(-1 * md->prev_entry.ax, md->prev_entry.az);
 }
 
 static void inact_timer_callback(struct k_work *work) {
@@ -108,4 +110,8 @@ bool sc_md_is_horizontal(const struct sc_motion_detector *md) {
 
 bool sc_md_is_inactive(const struct sc_motion_detector *md) {
   return md->is_inactive;
+}
+
+float sc_md_initial_row_angle(const struct sc_motion_detector *md) {
+  return md->initial_row_angle;
 }

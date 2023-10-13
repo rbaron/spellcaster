@@ -111,7 +111,8 @@ static int process_buffer() {
   }
 
   if (user_signal_callback != NULL) {
-    user_signal_callback(fifo_buffer, fifo_buffer_len);
+    user_signal_callback(sc_md_initial_row_angle(&md), fifo_buffer,
+                         fifo_buffer_len);
   }
 
   if (mode == MODE_RECORD) {

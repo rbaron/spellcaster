@@ -2,6 +2,7 @@ import argparse
 import asyncio
 import logging
 import pathlib
+import struct
 from enum import Enum
 
 from bleak import BleakClient, BleakScanner
@@ -9,7 +10,7 @@ from bleak.backends.characteristic import BleakGATTCharacteristic
 
 MIN_PACKET_LEN = 52
 
-HEADER = "ax,ay,az,gx,gy,gz,name,n"
+HEADER = "ax,ay,az,gx,gy,gz,name,n,initial_row_angle"
 
 logger = logging.getLogger(__name__)
 
@@ -26,6 +27,7 @@ class State(Enum):
 state = State.WAITING_FOR_HEADER
 n_bytes = 0
 n = 0
+initial_row_angle = 0
 
 file = None
 
@@ -34,6 +36,7 @@ def process_packet(packet: bytearray):
     global state
     global n_bytes
     global n
+    global initial_row_angle
 
     assert state == State.PROCESSING_DATA
     # 1 second of data.
@@ -50,7 +53,7 @@ def process_packet(packet: bytearray):
             entry = packet[pos : pos + 2]
             value = int.from_bytes(entry, byteorder="little", signed=True)
             file.write(f"{value},")
-        file.write(f"{args.gesture_name},{n}\n")
+        file.write(f"{args.gesture_name},{n},{initial_row_angle}\n")
 
     file.flush()
 
@@ -62,11 +65,15 @@ def process_packet(packet: bytearray):
 def notification_handler(characteristic: BleakGATTCharacteristic, data: bytearray):
     global state
     global n_bytes
+    global initial_row_angle
     """Simple notification handler which prints the data received."""
     if state == State.WAITING_FOR_HEADER:
         assert data[0] == 0xFF
         n_bytes = data[1] << 8 | data[2]
-        print(f"Expecting {n_bytes} bytes")
+        initial_row_angle = struct.unpack("f", data[3:7])[0]
+        print(
+            f"Expecting {n_bytes} bytes, initial row angle: {initial_row_angle} rad, {initial_row_angle * 180 / 3.1415926535} deg"
+        )
         state = State.WAITING_FOR_DATA
     elif state == State.WAITING_FOR_DATA:
         current_packet.extend(data)

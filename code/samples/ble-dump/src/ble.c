@@ -134,9 +134,22 @@ int sc_ble_init(void) {
   return 0;
 }
 
-int sc_ble_send(uint8_t *data, uint16_t len) {
+int sc_ble_send(float initial_row_angle, uint8_t *data, uint16_t len) {
+  BUILD_ASSERT(sizeof(float) == 4, "sizeof(float) != 4");
+
   // Send header 0xff, hi_len, lo_len.
-  uint8_t header[3] = {0xff, (uint8_t)(len >> 8), (uint8_t)(len & 0xff)};
+  uint8_t header[3 + 4] = {
+      // Magic byte.
+      0xff,
+      // 2 bytes, length of entries in bytes.
+      (uint8_t)(len >> 8),
+      (uint8_t)(len & 0xff),
+      // 4 bytes, initial row angle.
+      ((uint8_t *)&initial_row_angle)[0],
+      ((uint8_t *)&initial_row_angle)[1],
+      ((uint8_t *)&initial_row_angle)[2],
+      ((uint8_t *)&initial_row_angle)[3],
+  };
   RET_IF_ERR(bt_nus_send(NULL, header, sizeof(header)));
 
   // Send in chunks of 20 bytes.

@@ -16,6 +16,8 @@ struct sc_motion_detector {
   struct sc_accel_entry prev_entry;
   bool is_horizontal;
   bool is_inactive;
+  // The row angle (in radians) at which the movement started.
+  float initial_row_angle;
 };
 
 void sc_md_init(struct sc_motion_detector *md);
@@ -26,5 +28,7 @@ void sc_md_ingest(struct sc_motion_detector *md,
 bool sc_md_is_horizontal(const struct sc_motion_detector *md);
 
 bool sc_md_is_inactive(const struct sc_motion_detector *md);
+
+float sc_md_initial_row_angle(const struct sc_motion_detector *md);
 
 #endif  // _MOTION_DETECTOR_H_
