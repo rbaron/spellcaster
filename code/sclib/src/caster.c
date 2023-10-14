@@ -1,5 +1,6 @@
 #include "sclib/caster.h"
 
+#include <math.h>
 #include <zephyr/drivers/gpio.h>
 #include <zephyr/kernel.h>
 #include <zephyr/logging/log.h>
@@ -94,15 +95,23 @@ static void dump_buffer() {
   LOG_DBG("\n---END DUMP---");
 }
 
+// r is the initial row angle (in radians).
+static void project_signal_gravity(struct sc_accel_entry *entry, size_t len,
+                                   float r) {
+  int16_t tmp_az, tmp_gz;
+  for (size_t i = 0; i < len; i++) {
+    tmp_az = entry[i].az;
+    tmp_gz = entry[i].gz;
+    entry[i].az = tmp_az * cos(r) - entry[i].ax * sin(r);
+    entry[i].ax = tmp_az * sin(r) + entry[i].ax * cos(r);
+    entry[i].gz = tmp_gz * cos(r) - entry[i].gx * sin(r);
+    entry[i].gx = tmp_gz * sin(r) + entry[i].gx * cos(r);
+  }
+}
+
 // Test.
 struct sc_signal signal;
 static int process_buffer() {
-  // dump_buffer();
-  // sc_led_flash(2);
-  // k_msleep(2000);
-  // __ASSERT_NO_MSG(!sc_accel_reset_fifo());
-  // return 0;
-
   // If less than half a second of data, discard.
   if (fifo_buffer_len <
       (SC_CASTER_MIN_SIGNAL_MS * SC_ACCEL_SAMPLE_RATE_HZ) / 1000) {
@@ -114,6 +123,10 @@ static int process_buffer() {
     user_signal_callback(sc_md_initial_row_angle(&md), fifo_buffer,
                          fifo_buffer_len);
   }
+
+  // Project onto the canonical frame of reference (gravity is down).
+  project_signal_gravity(fifo_buffer, fifo_buffer_len,
+                         sc_md_initial_row_angle(&md));
 
   if (mode == MODE_RECORD) {
     LOG_DBG("Will store the signal on slot %d.", slot);
@@ -167,6 +180,7 @@ static int process_buffer() {
   }
 
 END:
+  // May trigger md's horizontal timer?
   k_msleep(2000);
   __ASSERT_NO_MSG(!sc_accel_reset_fifo());
   return 0;
