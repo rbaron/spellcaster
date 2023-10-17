@@ -8,8 +8,7 @@
 #include "sclib/motion_detector.h"
 
 // Store ~2.4 seconds of data.
-#define SC_SIGNAL_STORE_MAX_SAMPLES \
-  (SC_ACCEL_SAMPLE_RATE_HZ * (2900 - SC_MD_HORIZ_TIMER_PERIOD_MS) / 1000)
+#define SC_SIGNAL_STORE_MAX_SAMPLES (SC_ACCEL_SAMPLE_RATE_HZ * (2400) / 1000)
 
 // Number of slots for storing signals.
 #define SC_SIGNAL_STORE_MAX_SIGNALS 5

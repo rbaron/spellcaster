@@ -15,7 +15,7 @@
 #include "sclib/signal_store.h"
 #include "sclib/vibration.h"
 
-#define SC_CASTER_DIST_THRESHOLD 6000
+#define SC_CASTER_DIST_THRESHOLD 8000
 
 // Signals less than 500 ms (after discarding SC_MD_HORIZ_TIMER_PERIOD_MS), are
 // discarded.
@@ -167,14 +167,14 @@ static int process_buffer() {
 
   if (min_dist < SC_CASTER_DIST_THRESHOLD) {
     LOG_DBG("Matched slot %d", min_slot);
-    sc_vib_yes();
+    sc_vib_yes_async();
     if (user_callback != NULL) {
       user_callback(min_slot);
     }
     goto END;
   } else {
     LOG_DBG("Not matched!");
-    sc_led_flash(1);
+    // sc_led_flash(1);
     sc_vib_no();
     goto END;
   }

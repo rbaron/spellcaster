@@ -8,7 +8,7 @@
 
 #include "sclib/macros.h"
 
-#define SC_VIB_FLASH_PERIOD_MS 250
+#define SC_VIB_FLASH_PERIOD_MS 125
 
 #define SC_VIB_HIGH_DUTY_CYCLE_NS 10e6
 #define SC_VIB_LOW_DUTY_CYCLE_NS 100e6
@@ -29,6 +29,8 @@ static inline int sc_vib_off() {
 int sc_vib_ready();
 
 int sc_vib_yes();
+
+int sc_vib_yes_async();
 
 int sc_vib_no();
 
