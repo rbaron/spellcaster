@@ -1,0 +1,31 @@
+{
+	"folders": [
+		{
+			"path": "."
+		},
+		{
+			"path": "../../sclib"
+		}
+	],
+	"settings": {
+		"C_Cpp.autoAddFileAssociations": false,
+		"nrf-connect.applications": [
+			"${workspaceFolder}"
+		],
+		"nrf-connect.debugging.bindings": {
+			"${workspaceFolder}/build": "Launch build"
+		}
+	},
+	"launch": {
+		"version": "0.2.0",
+		"configurations": [
+			{
+				"type": "nrf-connect",
+				"request": "launch",
+				"name": "Launch build",
+				"config": "${workspaceFolder}/build",
+				"runToEntryPoint": "main"
+			}
+		]
+	}
+}

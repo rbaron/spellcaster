@@ -1,0 +1,34 @@
+source "Kconfig.zephyr"
+rsource "../../sclib/Kconfig"
+
+config SC_ZB_PARENT_POLL_INTERVAL_SEC
+	int "Interval for when b-parasite polls its parent for data in seconds."
+	default 30
+
+config SC_ZB_BATT_READ_INTERVAL_SEC
+	int "Interval for when b-parasite polls its parent for data in seconds."
+	default 1800
+
+config SC_ZB_BUILD_DATE
+  string "Zigbee basic cluster build date attribute. Max 16 bytes."
+  default ""
+
+config SC_ZB_MODEL_ID
+  string "Zigbee basic cluster model id attribute. Max 32 bytes."
+  default "spellcaster"
+
+config SC_ZB_MANUFACTURER_NAME
+  string "Zigbee basic cluster manufacturer name attribute. Max 32 bytes."
+  default "rbaron"
+
+config SC_ZB_HARDWARE_VERSION
+  int "Zigbee basic cluster hardware version attribute. 1 byte."
+  default BOARD_REVISION_CODE
+
+config SC_ZB_RESTART_WATCHDOG_TIMEOUT_SEC
+    int "Duration after the device will restart the rejoin procedure if a network has not been successfully joined."
+    default 3600
+
+config SC_ZB_DIMM_STEP
+    int "Step for sending the dim up/down commands."
+    default 15
