@@ -171,7 +171,11 @@
 		// };
 		storage_partition: partition@3e000 {
 			label = "storage";
-			reg = <0x0003E000 0x42000>;
+			reg = <0x0003E000 0x12000>;
+		};
+		storage_partition2: partition2@50000 {
+			label = "storage2";
+			reg = <0x00050000 0x30000>;
 		};
 	};
 };
