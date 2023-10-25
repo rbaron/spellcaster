@@ -10,50 +10,33 @@
 #include "ble.h"
 #include "hid.h"
 
-// LOG_MODULE_REGISTER(app, CONFIG_LOG_DEFAULT_LEVEL);
 LOG_MODULE_REGISTER(app, LOG_LEVEL_DBG);
-
-// struct sleep_context {
-//   struct k_work_delayable dwork;
-//   bool sleeping;
-// };
-
-// static struct sleep_context sleep_ctx = {
-//     .sleeping = false,
-// };
-
-// static void go_to_sleep(struct k_work *work) {
-//   struct k_work_delayable *dwork = k_work_delayable_from_work(work);
-//   struct sleep_context *ctx = CONTAINER_OF(dwork, struct sleep_context,
-//   dwork); ctx->sleeping = true; LOG_WRN("Going to sleep"); bt_disable();
-// }
 
 // Keymap.
 static uint8_t get_key_from_slot(uint8_t slot) {
   // https://docs.circuitpython.org/projects/hid/en/latest/_modules/adafruit_hid/keycode.html
   // 0, 1, 2...
-  static const uint8_t keymap[] = {0x27, 0x1e, 0x1f, 0x20, 0x21, 0x22, 0x23};
+  static const uint8_t keymap[] = {
+      // 0: 0
+      0x27,
+      // 1: 1
+      0x1e,
+      // 2: Play/Pause -- Doesn't really work like this.
+      // https://docs.circuitpython.org/projects/hid/en/latest/_modules/adafruit_hid/consumer_control_code.html
+      0xcd,
+      // 3: R
+      0x15,
+      // 4: B
+      0x05,
+      // 5: 5
+      0x22,
+      // 6: 5
+      0x23,
+  };
   return keymap[slot];
 }
 
 static void caster_cb(uint8_t slot) {
-  // Maybe wake up.
-  // if (sleep_ctx.sleeping) {
-  //   sleep_ctx.sleeping = false;
-  //   LOG_WRN("Waking up");
-  //   // bt_enable(NULL);
-  //   // settings_load();
-  //   // sc_led_flash(/*times=*/1);
-  //   // Reset.
-  //   // sys_reboot();
-  //   NVIC_SystemReset();
-  //   return;
-  // }
-
-  // __ASSERT_NO_MSG(
-  //     k_work_reschedule(&sleep_ctx.dwork,
-  //                       K_MSEC(1000 * CONFIG_SC_SLEEP_TIMEOUT_SEC)) >= 0);
-
   LOG_INF("caster_cb: slot %d", slot);
   uint8_t key = get_key_from_slot(slot);
   if (!key) {
@@ -74,18 +57,11 @@ void main(void) {
   LOG_DBG("Will init");
   __ASSERT_NO_MSG(!sc_caster_init(caster_cb));
   __ASSERT_NO_MSG(!sc_adc_init());
-  __ASSERT_NO_MSG(!sc_adc_init());
   __ASSERT_NO_MSG(!sc_ble_init());
   LOG_DBG("Will init HID");
   __ASSERT_NO_MSG(!sc_hid_init());
   LOG_DBG("Will start advertising");
   __ASSERT_NO_MSG(!sc_ble_start_advertising());
-
-  // Initialize delayed sleeping work.
-  // k_work_init_delayable(&sleep_ctx.dwork, go_to_sleep);
-  // __ASSERT_NO_MSG(
-  //     k_work_reschedule(&sleep_ctx.dwork,
-  //                       K_MSEC(1000 * CONFIG_SC_SLEEP_TIMEOUT_SEC)) >= 0);
 
   // Probably shut down unused ram?
   // power_down_unused_ram();

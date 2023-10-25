@@ -11,6 +11,7 @@
 		zephyr,flash = &flash0;
 		zephyr,code-partition = &slot0_partition;
 		zephyr,ieee802154 = &ieee802154;
+		zephyr,settings-partition = &settings_partition;
 	};
 
 	zephyr,user {
@@ -160,6 +161,7 @@
 			label = "image-0";
 			reg = <0x0000C000 0x32000>;
 		};
+
 		// We don't need no stinkin' slot 1.
 		// slot1_partition: partition@3e000 {
 			//   label = "image-1";
@@ -169,13 +171,22 @@
 			//   label = "image-scratch";
 			//   reg = <0x00070000 0xA000>;
 		// };
-		storage_partition: partition@3e000 {
-			label = "storage";
-			reg = <0x0003E000 0x12000>;
+
+		// Choice one: have separate partitions for settings and storage.
+		settings_partition: partition@3e000 {
+			label = "settings_partition";
+			reg = <0x0003E000 0x10000>;
 		};
-		storage_partition2: partition2@50000 {
-			label = "storage2";
-			reg = <0x00050000 0x30000>;
+		storage_partition: partition@4e000 {
+			label = "storage_partition";
+			reg = <0x0004e000 0x32000>;
 		};
+
+		// Choice 2: have a single partition for settings and storage, but we must remember to
+		// use CONFIG_SETTINGS_FILE and CONFIG_SETTINGS_FILE_PATH.
+		// storage_partition: partition@3e000 {
+			//   label = "storage";
+			//   reg = <0x0003e000 0x42000>;
+		// };
 	};
 };

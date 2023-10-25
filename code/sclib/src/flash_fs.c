@@ -12,18 +12,9 @@ FS_LITTLEFS_DECLARE_DEFAULT_CONFIG(storage);
 static struct fs_mount_t lfs_storage_mnt = {
     .type = FS_LITTLEFS,
     .fs_data = &storage,
-    // .storage_dev = (void *)FLASH_AREA_ID(storage),
-    .storage_dev = (void *)FIXED_PARTITION_ID(storage_partition2),
+    .storage_dev = (void *)FIXED_PARTITION_ID(storage_partition),
     .mnt_point = SC_FLASH_FS_MOUNT_POINT,
 };
-
-// This should work?
-// static struct fs_mount_t lfs_storage_mnt = {
-//     .type = FS_LITTLEFS,
-//     .fs_data = &storage,
-//     .storage_dev = (void *)FIXED_PARTITION_ID(storage_partition),
-//     .mnt_point = SC_FLASH_FS_MOUNT_POINT,
-// };
 
 int sc_flash_fs_init() {
   // TODO: if booting for the first time after a full flash erase, fs_mount will

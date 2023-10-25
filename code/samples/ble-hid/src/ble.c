@@ -16,7 +16,7 @@
 #define SC_MS_TO_INTERVAL(value_ms) ((uint16_t)(value_ms) / 0.625f)
 
 // LOG_MODULE_REGISTER(ble, CONFIG_LOG_DEFAULT_LEVEL);
-LOG_MODULE_REGISTER(ble, 4);
+LOG_MODULE_REGISTER(ble, LOG_LEVEL_DBG);
 
 static const struct bt_data ad[] = {
     BT_DATA_BYTES(BT_DATA_GAP_APPEARANCE,
