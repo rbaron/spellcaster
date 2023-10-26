@@ -1,3 +1,16 @@
 module = SCLIB
 module-str = sclib
 source "subsys/logging/Kconfig.template.log_config"
+
+config SCLIB_DTW_USE_WINDOWING
+	bool "Use windowing in DTW"
+	default y
+	help
+	  Use windowing in DTW
+
+config SCLIB_DTW_WINDOW_SIZE
+	int "Window size in DTW"
+	default 20
+	depends on SCLIB_DTW_USE_WINDOWING
+	help
+	  Window size in DTW
