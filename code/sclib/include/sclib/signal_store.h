@@ -7,16 +7,11 @@
 #include "sclib/accel.h"
 #include "sclib/motion_detector.h"
 
-// Mega dirty hack for Zigbee. Not enough RAM.
-#if CONFIG_ZIGBEE
-#define SC_SIGNAL_STORE_MAX_SAMPLES (SC_ACCEL_SAMPLE_RATE_HZ * (2100) / 1000)
-#else
-// Store ~2.4 seconds of data.
-#define SC_SIGNAL_STORE_MAX_SAMPLES (SC_ACCEL_SAMPLE_RATE_HZ * (2400) / 1000)
-#endif
+// Store 3s seconds of data.
+#define SC_SIGNAL_STORE_MAX_SAMPLES (SC_ACCEL_SAMPLE_RATE_HZ * (3000) / 1000)
 
 // Number of slots for storing signals.
-#define SC_SIGNAL_STORE_MAX_SIGNALS 5
+#define SC_SIGNAL_STORE_MAX_SIGNALS 10
 
 struct sc_signal {
   struct sc_accel_entry entries[SC_SIGNAL_STORE_MAX_SAMPLES];
