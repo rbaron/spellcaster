@@ -10,7 +10,7 @@
 // LOG_MODULE_REGISTER(ble, CONFIG_LOG_DEFAULT_LEVEL);
 LOG_MODULE_REGISTER(ble, 4);
 
-static uint8_t service_data[7] = {0};
+static uint8_t service_data[8] = {0};
 
 static const struct bt_data ad[] = {
     BT_DATA_BYTES(BT_DATA_FLAGS, (BT_LE_AD_GENERAL | BT_LE_AD_NO_BREDR)),
@@ -56,7 +56,7 @@ int sc_ble_stop_advertising(void) {
 }
 
 int sc_ble_set_advertising_data(uint8_t n_presses) {
-  RET_CHECK(n_presses <= 5, "n_presses must be <= 5");
+  RET_CHECK(n_presses <= 7, "n_presses must be <= 7");
 
   static uint8_t pkt_id = 0;
 
@@ -71,9 +71,18 @@ int sc_ble_set_advertising_data(uint8_t n_presses) {
   service_data[3] = 0x00;
   service_data[4] = pkt_id++;
 
-  // Button.
-  service_data[5] = 0x3a;
-  service_data[6] = n_presses;
+  // We can only encode up to 5 presses as button actions.
+  if (n_presses <= 5) {
+    // Button.
+    service_data[5] = 0x3a;
+    service_data[6] = n_presses;
+    service_data[7] = 0x00;
+  } else {
+    // Dimmer.
+    service_data[5] = 0x3c;
+    service_data[6] = n_presses - 5;
+    service_data[7] = n_presses;
+  }
 
   LOG_HEXDUMP_DBG(ad, sizeof(ad), "Encoded BLE adv: ");
 

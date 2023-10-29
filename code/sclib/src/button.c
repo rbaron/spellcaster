@@ -66,6 +66,9 @@ static void double_press_cb(struct k_work *work) {
   } else if (n_presses == 5) {
     LOG_DBG("Button %d quintuple press event", cfg->button);
     maybe_call_user_callback(cfg->button, SC_BUTTON_EVENT_QUINTUPLE_PRESS);
+  } else if (n_presses == 6) {
+    LOG_DBG("Button %d sextuple press event", cfg->button);
+    maybe_call_user_callback(cfg->button, SC_BUTTON_EVENT_SEXTUPLE_PRESS);
   } else {
     LOG_WRN("Button %d unexpected number of presses: %d", cfg->button,
             n_presses);

@@ -151,6 +151,16 @@ static int process_buffer() {
       continue;
     }
 
+    // Within max signal diff?
+    if (1000 * abs(signal.len - fifo_buffer_len) / SC_ACCEL_SAMPLE_RATE_HZ >
+        CONFIG_SCLIB_MAX_SIGNAL_DIFF_MS) {
+      LOG_DBG(
+          "Signal length diff too large. Ignoring candidate. Stored len: %d, "
+          "query len: %d.\n",
+          signal.len, fifo_buffer_len);
+      continue;
+    }
+
     // Compare the signal.
     // TODO: Bug. Sometimes query_len < 0 here.
     LOG_DBG("Comparing signal. Stored len: %d, query len: %d.\n", signal.len,
@@ -181,7 +191,7 @@ static int process_buffer() {
 
 END:
   // May trigger md's horizontal timer?
-  k_msleep(2000);
+  k_msleep(500);
   __ASSERT_NO_MSG(!sc_accel_reset_fifo());
   return 0;
 }
@@ -252,6 +262,11 @@ static void sc_caster_thread_fn(void *, void *, void *) {
                msg.event == SC_BUTTON_EVENT_QUINTUPLE_PRESS) {
       LOG_DBG("Switching to capture mode (slot 4)");
       slot = 4;
+      change_mode(&mode, &state, MODE_RECORD);
+    } else if (msg.button == SC_BUTTON_A &&
+               msg.event == SC_BUTTON_EVENT_SEXTUPLE_PRESS) {
+      LOG_DBG("Switching to capture mode (slot 5)");
+      slot = 5;
       change_mode(&mode, &state, MODE_RECORD);
     } else if (msg.button == SC_BUTTON_A &&
                msg.event == SC_BUTTON_EVENT_LONG_PRESS) {

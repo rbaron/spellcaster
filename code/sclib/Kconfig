@@ -2,6 +2,18 @@ module = SCLIB
 module-str = sclib
 source "subsys/logging/Kconfig.template.log_config"
 
+config SCLIB_MAX_SIGNAL_LENGTH_MS
+	int "Maximum signal length in ms"
+	default 3000
+	help
+	  Maximum signal length in ms
+
+config SCLIB_MAX_SIGNAL_DIFF_MS
+	int "Maximum signal difference in ms"
+	default 500
+	help
+	  Maximum signal difference in ms
+
 config SCLIB_DTW_USE_WINDOWING
 	bool "Use windowing in DTW"
 	default y
