@@ -17,7 +17,7 @@
 
 #define SC_CASTER_DIST_THRESHOLD 8000
 
-// Signals less than 500 ms (after discarding SC_MD_HORIZ_TIMER_PERIOD_MS), are
+// Signals less than 500 ms (after discarding SC_MD_STILL_PERIOD_MS), are
 // discarded.
 #define SC_CASTER_MIN_SIGNAL_MS 500
 
@@ -81,18 +81,6 @@ static void button_callback(sc_button_t button, sc_button_event_t event) {
   if (k_msgq_put(&button_event_msgq, &msg, K_NO_WAIT)) {
     LOG_WRN("Failed to put button event in queue");
   }
-}
-
-// mps both accelerometer and motion detector data in CSV format, with header.
-static void dump_buffer() {
-  LOG_DBG("\n---BEGIN DUMP---");
-  LOG_DBG("ax,ay,az,gx,gy,gz");
-  for (size_t i = 0; i < fifo_buffer_len; i++) {
-    LOG_DBG("%d,%d,%d,%d,%d,%d", fifo_buffer[i].ax, fifo_buffer[i].ay,
-            fifo_buffer[i].az, fifo_buffer[i].gx, fifo_buffer[i].gy,
-            fifo_buffer[i].gz);
-  }
-  LOG_DBG("\n---END DUMP---");
 }
 
 // r is the initial row angle (in radians).
@@ -282,14 +270,9 @@ static void sc_caster_thread_fn(void *, void *, void *) {
 
     sc_md_ingest(&md, &entry);
 
-    // if (sc_md_is_inactive(&md)) {
-    //   LOG_DBG("Still -- going to sleep.");
-    //   // End thread. A new one will be created when we wake up.
-    //   sc_accel_sleep();
-    //   return;
-    // }
     // We are not capturing.
     if (state == STATE_READY) {
+      // Not horizontal means the movement started, so we begin capturing.
       if (!sc_md_is_horizontal(&md)) {
         LOG_DBG("Will start to capture");
         fifo_buffer_len = 0;
@@ -300,20 +283,28 @@ static void sc_caster_thread_fn(void *, void *, void *) {
         LOG_DBG("Buffer full. Discarding.");
         state = STATE_WAITING;
         fifo_buffer_len = 0;
-      } else if (!sc_md_is_horizontal(&md)) {
+        // } else if (!sc_md_is_horizontal(&md)) {
+        //   fifo_buffer[fifo_buffer_len++] = entry;
+      } else if (!sc_md_is_inactive(&md)) {
         fifo_buffer[fifo_buffer_len++] = entry;
-      } else {
-        // Remove 500 ms of data.
+      } else if (!sc_md_is_horizontal(&md)) {
+        LOG_DBG("Inactive, non horizontal. Assuming aborted capture.");
+        sc_vib_no();
+        state = STATE_WAITING;
+        fifo_buffer_len = 0;
+      } else if (sc_md_is_horizontal(&md)) {
+        // Remove data points of the last stillness detection period.
         int n_remove =
-            (SC_MD_HORIZ_TIMER_PERIOD_MS * SC_ACCEL_SAMPLE_RATE_HZ) / 1000;
-        // fifo_buffer_len -= 500 / SC_ACCEL_SAMPLE_PERIOD_MS;
+            (SC_MD_INACTIVE_TIMER_PERIOD_MS * SC_ACCEL_SAMPLE_RATE_HZ) / 1000;
         LOG_DBG(
-            "Stopped capturing. Got a total of %d samples ~ %.2f s. Removing "
+            "Finished capturing. Got a total of %d samples ~ %.2f s. Removing "
             "%d (~ %.2f s).",
             fifo_buffer_len, (float)fifo_buffer_len / SC_ACCEL_SAMPLE_RATE_HZ,
             n_remove, (float)n_remove / SC_ACCEL_SAMPLE_RATE_HZ);
         fifo_buffer_len -= n_remove;
         state = STATE_CONFIRMING;
+      } else {
+        LOG_ERR("Should not be here");
       }
     } else if (state == STATE_CONFIRMING) {
       LOG_DBG("Will process buffer");
@@ -339,9 +330,8 @@ static void accel_evt_handler(enum sc_accel_evt evt) {
     LOG_DBG("Accel event: wakeup -- will start caster thread.");
     // __ASSERT_NO_MSG(!sc_accel_init());
 
-    // Blocks here sometimes I think (LED stays on). Why? This should not be an
-    // ISR...
-    // sc_led_flash(1);
+    // Blocks here sometimes I think (LED stays on). Why? This should not be
+    // an ISR... sc_led_flash(1);
 
     sc_md_init(&md);
     fifo_buffer_len = 0;
@@ -383,7 +373,7 @@ int sc_caster_init(sc_caster_callback_t callback) {
   sc_accel_set_evt_handler(accel_evt_handler);
 
   sc_led_flash(1);
-  sc_vib_flash(1);
+  sc_vib_flash(2);
 
   sc_md_init(&md);
 

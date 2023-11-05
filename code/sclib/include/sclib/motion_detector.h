@@ -7,11 +7,12 @@
 
 #include "sclib/accel.h"
 
-#define SC_MD_HORIZ_TIMER_PERIOD_MS 250
+// The motion detector will consider the device inactive if it hasn't moved for
+// this many milliseconds.
+#define SC_MD_INACTIVE_TIMER_PERIOD_MS 350
 
 // All fields should be considered private.
 struct sc_motion_detector {
-  struct k_work_delayable horiz_timer;
   struct k_work_delayable inact_timer;
   struct sc_accel_entry prev_entry;
   bool is_horizontal;

@@ -4,29 +4,15 @@
 #include <stdbool.h>
 #include <zephyr/logging/log.h>
 
-#define MD_INACTIVE_TIMER_PERIOD_MS (30 * 1000)
-
 // Full motion is 4g, in 16 bits
-// #define MD_ACCEL_DIFF_THRESHOLD (4 * 1024)
-// #define MD_STILL_Y_ACCEL_THRESHOLD (4 * 1024)
 #define MD_ACCEL_DIFF_THRESHOLD (3 * 1024)
 #define MD_STILL_Y_ACCEL_THRESHOLD (4 * 1024)
 
-LOG_MODULE_REGISTER(motion_detector, CONFIG_SCLIB_LOG_LEVEL);
-// LOG_MODULE_REGISTER(motion_detector, LOG_LEVEL_DBG);
+// LOG_MODULE_REGISTER(motion_detector, CONFIG_SCLIB_LOG_LEVEL);
+LOG_MODULE_REGISTER(motion_detector, LOG_LEVEL_DBG);
 
 static uint16_t abs(int16_t x) {
   return x < 0 ? -x : x;
-}
-
-static void horiz_timer_callback(struct k_work *work) {
-  struct k_work_delayable *delayable =
-      CONTAINER_OF(work, struct k_work_delayable, work);
-  struct sc_motion_detector *md =
-      CONTAINER_OF(delayable, struct sc_motion_detector, horiz_timer);
-  LOG_DBG("Horizontal");
-  md->is_horizontal = true;
-  md->initial_row_angle = atan2(-1 * md->prev_entry.ax, md->prev_entry.az);
 }
 
 static void inact_timer_callback(struct k_work *work) {
@@ -36,10 +22,26 @@ static void inact_timer_callback(struct k_work *work) {
       CONTAINER_OF(delayable, struct sc_motion_detector, inact_timer);
   LOG_DBG("Inactive");
   md->is_inactive = true;
+
+  // It it horizontal?
+  md->is_horizontal = abs(md->prev_entry.ay) < MD_ACCEL_DIFF_THRESHOLD;
+
+  if (md->is_horizontal) {
+    LOG_DBG("Horizontal");
+    md->initial_row_angle = atan2(-1 * md->prev_entry.ax, md->prev_entry.az);
+  } else {
+    LOG_DBG("Not horizontal");
+  }
+
+  // Logs all entries.
+  LOG_DBG("Entry: %d, %d, %d, %d, %d, %d", md->prev_entry.ax, md->prev_entry.ay,
+          md->prev_entry.az, md->prev_entry.gx, md->prev_entry.gy,
+          md->prev_entry.gz);
+
+  // Reset the timer if we're not still horizontal.
 }
 
 void sc_md_init(struct sc_motion_detector *md) {
-  k_work_init_delayable(&md->horiz_timer, horiz_timer_callback);
   k_work_init_delayable(&md->inact_timer, inact_timer_callback);
   md->is_horizontal = false;
   md->is_inactive = false;
@@ -56,6 +58,10 @@ void sc_md_ingest(struct sc_motion_detector *md,
   diff.gy = entry->gy - md->prev_entry.gy;
   diff.gz = entry->gz - md->prev_entry.gz;
 
+  // TODO: A better way of detecting stillness. Now we're only looking at
+  // acceleration changes, which is wrong -- a constant acceleration does not
+  // mean stillness.
+
   // If any of the axes are large, reset the timer.
   bool is_still_now = abs(diff.ax) < MD_ACCEL_DIFF_THRESHOLD &&
                       abs(diff.ay) < MD_ACCEL_DIFF_THRESHOLD &&
@@ -66,38 +72,14 @@ void sc_md_ingest(struct sc_motion_detector *md,
 
   if (!is_still_now) {
     // Restart timer.
-    k_work_reschedule(&md->inact_timer, K_MSEC(MD_INACTIVE_TIMER_PERIOD_MS));
+    k_work_reschedule(&md->inact_timer, K_MSEC(SC_MD_INACTIVE_TIMER_PERIOD_MS));
     // Trigger state transition if we were still.
     if (md->is_inactive) {
       LOG_DBG("Active");
-      md->is_inactive = false;
-    }
-  }
-
-  bool is_horiz_now = abs(entry->ay) < MD_ACCEL_DIFF_THRESHOLD;
-
-  bool is_still_horiz_now = is_still_now && is_horiz_now;
-
-  // Reset the timer if we're not still horizontal.
-  if (!is_still_horiz_now) {
-    // Restart timer.
-    k_work_reschedule(&md->horiz_timer, K_MSEC(SC_MD_HORIZ_TIMER_PERIOD_MS));
-
-    // Trigger state transition if we were still.
-    if (md->is_horizontal) {
-      LOG_DBG("No longer horizontal: still: %d, horiz: %d", is_still_now,
-              is_horiz_now);
-      // Logs all diffs.
       LOG_DBG("Diff: %d, %d, %d, %d, %d, %d", diff.ax, diff.ay, diff.az,
               diff.gx, diff.gy, diff.gz);
-      // Logs all entries.
-      LOG_DBG("Entry: %d, %d, %d, %d, %d, %d", entry->ax, entry->ay, entry->az,
-              entry->gx, entry->gy, entry->gz);
-      md->is_horizontal = false;
+      md->is_inactive = false;
     }
-    // } else {
-    //   LOG_DBG("Still horizontal: still: %d, horiz: %d", is_still_now,
-    //           is_horiz_now);
   }
 
   // Save the current entry.
@@ -105,7 +87,7 @@ void sc_md_ingest(struct sc_motion_detector *md,
 }
 
 bool sc_md_is_horizontal(const struct sc_motion_detector *md) {
-  return md->is_horizontal;
+  return md->is_inactive && md->is_horizontal;
 }
 
 bool sc_md_is_inactive(const struct sc_motion_detector *md) {
