@@ -1,4 +1,5 @@
 """Device handler for the spellcaster magic wand."""
+
 from zigpy.quirks import CustomDevice
 from zhaquirks.const import (
     CLUSTER_ID,
@@ -34,6 +35,7 @@ ENDPOINTS_ = {
     },
 }
 
+
 def slot_trigger(step_size):
     return {
         COMMAND: COMMAND_STEP,
@@ -41,6 +43,7 @@ def slot_trigger(step_size):
         ENDPOINT_ID: 10,
         PARAMS: {"step_mode": 1, "step_size": step_size},
     }
+
 
 class Spellcaster(CustomDevice):
     signature = {
@@ -54,6 +57,5 @@ class Spellcaster(CustomDevice):
     }
 
     device_automation_triggers = {
-        ('spell', f'{slot + 1}'): slot_trigger(slot)
-        for slot in range(10)
+        ("spell", f"{slot + 1}"): slot_trigger(slot) for slot in range(10)
     }

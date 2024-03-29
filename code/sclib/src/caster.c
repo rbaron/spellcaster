@@ -1,6 +1,7 @@
 #include "sclib/caster.h"
 
 #include <math.h>
+#include <stdlib.h>
 #include <zephyr/drivers/gpio.h>
 #include <zephyr/kernel.h>
 #include <zephyr/logging/log.h>
@@ -274,40 +275,40 @@ static void sc_caster_thread_fn(void *, void *, void *) {
     if (state == STATE_READY) {
       // Not horizontal means the movement started, so we begin capturing.
       if (!sc_md_is_horizontal(&md)) {
-        LOG_DBG("Will start to capture");
+        LOG_DBG("READY. Will enter CAPTURING state.");
         fifo_buffer_len = 0;
         state = STATE_CAPTURING;
       }
     } else if (state == STATE_CAPTURING) {
       if (fifo_buffer_len == SC_SIGNAL_STORE_MAX_SAMPLES) {
-        LOG_DBG("Buffer full. Discarding.");
+        LOG_DBG("CAPTURING. Buffer full. Discarding. Entering WAITING state.");
         state = STATE_WAITING;
         fifo_buffer_len = 0;
         // } else if (!sc_md_is_horizontal(&md)) {
         //   fifo_buffer[fifo_buffer_len++] = entry;
       } else if (!sc_md_is_inactive(&md)) {
         fifo_buffer[fifo_buffer_len++] = entry;
-      } else if (!sc_md_is_horizontal(&md)) {
-        LOG_DBG("Inactive, non horizontal. Assuming aborted capture.");
-        sc_vib_no();
-        state = STATE_WAITING;
-        fifo_buffer_len = 0;
+        // } else if (!sc_md_is_horizontal(&md)) {
+        //   LOG_DBG("Inactive, non horizontal. Assuming aborted capture.");
+        //   sc_vib_no();
+        //   state = STATE_WAITING;
+        //   fifo_buffer_len = 0;
       } else if (sc_md_is_horizontal(&md)) {
         // Remove data points of the last stillness detection period.
         int n_remove =
             (SC_MD_INACTIVE_TIMER_PERIOD_MS * SC_ACCEL_SAMPLE_RATE_HZ) / 1000;
         LOG_DBG(
-            "Finished capturing. Got a total of %d samples ~ %.2f s. Removing "
-            "%d (~ %.2f s).",
+            "CAPTURING. Got a total of %d samples ~ %.2f s. Removing "
+            "%d (~ %.2f s). Entering CONFIRMING state.",
             fifo_buffer_len, (float)fifo_buffer_len / SC_ACCEL_SAMPLE_RATE_HZ,
             n_remove, (float)n_remove / SC_ACCEL_SAMPLE_RATE_HZ);
         fifo_buffer_len -= n_remove;
         state = STATE_CONFIRMING;
-      } else {
-        LOG_ERR("Should not be here");
+        // } else {
+        //   LOG_ERR("Should not be here");
       }
     } else if (state == STATE_CONFIRMING) {
-      LOG_DBG("Will process buffer");
+      LOG_DBG("CONFIRMING. Will process buffer. Entering WAITING state.");
       if (process_buffer()) {
         LOG_ERR("Failed to process buffer");
       }
@@ -315,10 +316,11 @@ static void sc_caster_thread_fn(void *, void *, void *) {
       state = STATE_WAITING;
     } else if (state == STATE_WAITING) {
       if (sc_md_is_horizontal(&md)) {
-        LOG_DBG("Will get ready");
+        LOG_DBG("WAITING. Now is_horizontal. Entering READY state.");
         state = STATE_READY;
         // sc_led_flash(1);
         sc_vib_ready();
+        k_msleep(500);
       }
     }
   }
