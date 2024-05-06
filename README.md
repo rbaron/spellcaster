@@ -1,6 +1,6 @@
 [![spellcaster Demo](https://img.youtube.com/vi/c5Yf7bW8n6s/maxresdefault.jpg)](https://youtu.be/c5Yf7bW8n6s)
 
-spellcaster is a home automation magic wand.
+spellcaster is a home automation magic wand. Click on the thumbnail above to watch it in action.
 
 # How does it work?
 An accelerometer and gyroscope are used to capture gestures ("spells"). Cast spells are then compared against previously stored ones. An action is triggered if there's a good match.
@@ -38,7 +38,7 @@ To store a new spell in slot `S`, press the `A` button `S` times and cast a spel
 
 In this video you can see five different spells being recorded:
 
-[![spellcaster recording spells](https://img.youtube.com/vi/6D_qe5v8ILQ/hqdefault.jpg)](https://youtu.be/6D_qe5v8ILQ)
+[![spellcaster recording spells](https://img.youtube.com/vi/6D_qe5v8ILQ/maxres1.jpg)](https://youtu.be/6D_qe5v8ILQ)
 
 ## Replay mode
 This is the default mode in which spellcaster will live most of its life. Once a spell is cast, it will be compared to previously stored spells. If a good match is found, a vibration pattern is executed and an action will be triggered.
@@ -72,6 +72,9 @@ The samples are flashed with ARM's usual [SWD](https://developer.arm.com/documen
 The [`data/`](./data/) directory contains a bunch of Jupyter notebooks I used to tune the spell matching and some of the raw collected data.
 
 # 3D printed case
+
+![fusion-case](https://github.com/rbaron/spellcaster/assets/1573409/e60e9bde-11f5-4689-91da-1f59e97c9445)
+
 The [`case/`](./case/) directory contains the STEP files for a 3D printed case. It's okay-ish, but could use some love. The 3D printed springs lose some tension after a while, and so do the clamps that hold both halves together. On the bright side, there's no glue or screws involved.
 
 
