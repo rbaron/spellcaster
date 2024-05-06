@@ -17,7 +17,7 @@ In the "Software" section below, there are some firmware samples for each of the
 # Project status
 It sort of works, but there are caveats. Reliability and usability need improvement -- it's easy to [hold it wrong](https://www.wired.com/2010/06/iphone-4-holding-it-wrong/). See "User interface" below. The code also needs the proverbial cleaning up.
 
-Treat this project as a fun experiment.
+Approach this project as a fun experiment. Expect fun and experimental support.
 
 # Hardware
 ![PCB](https://github.com/rbaron/spellcaster/assets/1573409/da951f41-2f28-43aa-8d76-5cb069a4d24b)
