@@ -74,7 +74,7 @@ The [`data/`](./data/) directory contains a bunch of Jupyter notebooks I used to
 # 3D printed case
 ![fusion-case](https://github.com/rbaron/spellcaster/assets/1573409/e60e9bde-11f5-4689-91da-1f59e97c9445)
 
-The [`case/`](./case/) directory contains the STEP files for a 3D printed case. It's okay-ish, but could use some love. The 3D printed springs lose some tension after a while, and so do the clamps that hold both halves together. On the bright side, there's no glue nor screws involved. You can watch a video of the full assembly process [here](https://www.youtube.com/watch?v=kVlnX7w-8rc).
+The [`3dprint/`](./3dprint/) directory contains the STEP files for a 3D printed case. It's okay-ish, but could use some love. The 3D printed springs lose some tension after a while, and so do the clamps that hold both halves together. On the bright side, there's no glue nor screws involved. You can watch a video of the full assembly process [here](https://www.youtube.com/watch?v=kVlnX7w-8rc).
 
 
 # License
