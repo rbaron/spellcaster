@@ -78,4 +78,8 @@ The [`3dprint/`](./3dprint/) directory contains the STEP files for a 3D printed 
 
 
 # License
-The hardware and associated design files are released under the [Creative Commons CC BY-SA 4.0](https://creativecommons.org/licenses/by-sa/4.0/) license. The code is released under the [MIT license](https://opensource.org/licenses/MIT).
+## Hardware
+spellcaster hardware © 2023 by rbaron is licensed under Creative Commons Attribution-ShareAlike 4.0 International (CC BY-SA 4.0). See [deed](https://creativecommons.org/licenses/by-sa/4.0/).
+
+## Software
+Software in this repository is licensed under the [MIT license](https://opensource.org/licenses/MIT). See [LICENSE_SOFTWARE](./LICENSE_SOFTWARE).
